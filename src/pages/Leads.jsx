@@ -6,18 +6,45 @@ export default function Leads() {
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
+  const [leads, setLeads] = useState([
+    { id: 'L-101', name: 'Angela Martin', source: 'HomeAdvisor', phone: '(555) 019-2831', status: 'New', time: '2h ago', notes: 'Looking for a 3-season sunroom.' },
+    { id: 'L-104', name: 'Toby Flenderson', source: 'Website', phone: '(555) 777-1234', status: 'New', time: '5h ago', notes: 'Needs front door replacement.' },
+    { id: 'L-105', name: 'Phyllis Vance', source: 'Call-in', phone: '(555) 123-9876', status: 'New', time: '1d ago', notes: 'Window replacement for kitchen.' },
+    { id: 'L-102', name: 'Creed Bratton', source: 'Website', phone: '(555) 998-1123', status: 'Contacted', time: '1d ago', notes: 'Needs 5 windows replaced.' },
+    { id: 'L-106', name: 'Ryan Howard', source: 'Angie', phone: '(555) 888-5555', status: 'Contacted', time: '2d ago', notes: 'Patio cover request.' },
+    { id: 'L-103', name: 'Kelly Kapoor', source: 'Angie', phone: '(555) 777-6655', status: 'Appt. Set', time: '2d ago', notes: 'Wants patio enclosure quote.' },
+    { id: 'L-107', name: 'Meredith Palmer', source: 'Referral', phone: '(555) 333-2222', status: 'Appt. Set', time: '3d ago', notes: 'Gutter replacement.' },
+    { id: 'L-108', name: 'Kevin Malone', source: 'HomeAdvisor', phone: '(555) 444-1111', status: 'Quoted', time: '4d ago', notes: 'Sunroom extension. Quoted $15k.' },
+  ]);
+
   const kanbanColumns = [
-    { title: 'New', count: 4, color: 'primary' },
-    { title: 'Contacted', count: 3, color: 'warning' },
-    { title: 'Appt. Set', count: 5, color: 'success' },
-    { title: 'Quoted', count: 2, color: 'primary' },
+    { title: 'New', color: 'primary' },
+    { title: 'Contacted', color: 'warning' },
+    { title: 'Appt. Set', color: 'success' },
+    { title: 'Quoted', color: 'primary' },
   ];
 
-  const leads = [
-    { id: 'L-101', name: 'Angela Martin', source: 'HomeAdvisor', phone: '(555) 019-2831', status: 'New', time: '2h ago', notes: 'Looking for a 3-season sunroom.' },
-    { id: 'L-102', name: 'Creed Bratton', source: 'Website', phone: '(555) 998-1123', status: 'Contacted', time: '1d ago', notes: 'Needs 5 windows replaced.' },
-    { id: 'L-103', name: 'Kelly Kapoor', source: 'Angie', phone: '(555) 777-6655', status: 'Appt. Set', time: '2d ago', notes: 'Wants patio enclosure quote.' },
-  ];
+  /* --- Drag and Drop Handlers --- */
+  const handleDragStart = (e, leadId) => {
+    e.dataTransfer.setData('leadId', leadId);
+    e.currentTarget.style.opacity = '0.5'; // Visual feedback
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Required to allow dropping
+  };
+
+  const handleDrop = (e, newStatus) => {
+    e.preventDefault();
+    const leadId = e.dataTransfer.getData('leadId');
+    setLeads(leads.map(lead => 
+      lead.id === leadId ? { ...lead, status: newStatus } : lead
+    ));
+  };
 
   return (
     <div className="animate-fade-in">
@@ -39,43 +66,57 @@ export default function Leads() {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', overflowX: 'auto' }}>
-            {kanbanColumns.map((col) => (
-              <div key={col.title} style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '0.75rem', minHeight: '65vh' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.25rem 0.5rem' }}>
-                  <h4 style={{ fontWeight: 600, fontSize: '0.875rem' }}>{col.title}</h4>
-                  <span style={{ backgroundColor: 'var(--border)', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: 'var(--radius-full)' }}>{col.count}</span>
+            {kanbanColumns.map((col) => {
+              const columnLeads = leads.filter(l => l.status === col.title);
+              
+              return (
+                <div 
+                  key={col.title} 
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '0.75rem', minHeight: '65vh' }}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, col.title)}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.25rem 0.5rem' }}>
+                    <h4 style={{ fontWeight: 600, fontSize: '0.875rem' }}>{col.title}</h4>
+                    <span style={{ backgroundColor: 'var(--border)', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
+                      {columnLeads.length}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: '100px' }}>
+                    {columnLeads.map((lead) => (
+                      <div 
+                        key={lead.id} 
+                        className="card hover-lift" 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, lead.id)}
+                        onDragEnd={handleDragEnd}
+                        style={{ padding: '1rem', cursor: 'grab', borderLeft: `3px solid var(--${col.color})` }}
+                        onClick={() => setSelectedLead(lead)}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <h5 style={{ fontWeight: 600, margin: 0, fontSize: '0.875rem' }}>{lead.name}</h5>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>{lead.time}</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                          Source: <span style={{ fontWeight: 500 }}>{lead.source}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }} onClick={e => e.stopPropagation()}>
+                          <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Call"><Phone size={14} /></button>
+                          <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Text"><MessageSquare size={14} /></button>
+                          <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Schedule"><CalendarIcon size={14} /></button>
+                        </div>
+                      </div>
+                    ))}
+                    {columnLeads.length === 0 && (
+                      <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        Drag leads here
+                      </div>
+                    )}
+                  </div>
                 </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {leads.filter(l => l.status === col.title || (col.title === 'New' && l.status === 'New')).map((lead) => (
-                    <div 
-                      key={lead.id} 
-                      className="card hover-lift" 
-                      style={{ padding: '1rem', cursor: 'pointer', borderLeft: `3px solid var(--${col.color})` }}
-                      onClick={() => setSelectedLead(lead)}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                        <h5 style={{ fontWeight: 600, margin: 0, fontSize: '0.875rem' }}>{lead.name}</h5>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>{lead.time}</span>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                        Source: <span style={{ fontWeight: 500 }}>{lead.source}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }} onClick={e => e.stopPropagation()}>
-                        <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Call"><Phone size={14} /></button>
-                        <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Text"><MessageSquare size={14} /></button>
-                        <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Schedule"><CalendarIcon size={14} /></button>
-                      </div>
-                    </div>
-                  ))}
-                  {col.title === 'Quoted' && (
-                    <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                      Drag leads here
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
