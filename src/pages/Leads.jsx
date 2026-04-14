@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Phone, Calendar as CalendarIcon, UserPlus, Clock } from 'lucide-react';
+import { Plus, MessageSquare, Phone, Calendar as CalendarIcon, UserPlus, Clock, Send } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Leads() {
@@ -44,6 +44,32 @@ export default function Leads() {
     setLeads(leads.map(lead => 
       lead.id === leadId ? { ...lead, status: newStatus } : lead
     ));
+  };
+
+  /* --- Interactive SMS Handlers --- */
+  const [selectedSmsLead, setSelectedSmsLead] = useState(leads.find(l => l.name === 'Kelly Kapoor'));
+  const [smsText, setSmsText] = useState('');
+  const [chatHistory, setChatHistory] = useState([
+    { sender: 'us', text: 'Hi Kelly, this is Kool View confirming your site visit tomorrow at 10:00 AM. Reply C to confirm or R to reschedule.', time: '10:00 AM' },
+    { sender: 'them', text: 'C', time: '10:15 AM' }
+  ]);
+
+  const openSmsForLead = (lead) => {
+    setSelectedSmsLead(lead);
+    setChatHistory([
+      { sender: 'us', text: `Hi ${lead.name.split(' ')[0]}, thanks for reaching out to Kool View! How can we help you today?`, time: 'Just now' }
+    ]);
+  };
+
+  const sendSms = () => {
+    if (!smsText.trim()) return;
+    setChatHistory([...chatHistory, { sender: 'us', text: smsText, time: 'Now' }]);
+    setSmsText('');
+    
+    // Simulate a fake reply after 2 seconds for the demo!
+    setTimeout(() => {
+      setChatHistory(prev => [...prev, { sender: 'them', text: "Sounds great, looking forward to it!", time: 'Now' }]);
+    }, 2000);
   };
 
   return (
@@ -103,7 +129,13 @@ export default function Leads() {
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }} onClick={e => e.stopPropagation()}>
                           <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Call"><Phone size={14} /></button>
-                          <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Text"><MessageSquare size={14} /></button>
+                          <button 
+                            style={{ color: selectedSmsLead?.id === lead.id ? 'var(--primary)' : 'var(--text-muted)', padding: '0.25rem', transition: 'var(--transition)' }} 
+                            title="Text"
+                            onClick={(e) => { e.stopPropagation(); openSmsForLead(lead); }}
+                          >
+                            <MessageSquare size={14} />
+                          </button>
                           <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Schedule"><CalendarIcon size={14} /></button>
                         </div>
                       </div>
@@ -120,31 +152,58 @@ export default function Leads() {
           </div>
         </div>
 
-        {/* Sidebar Actions (Reminders Demo) */}
+        {/* Dynamic Interactive SMS Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>SMS Reminders</h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-              Send automated text reminders to clients via your dedicated Kool View business number.
-            </p>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '75vh' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>Live SMS Hub</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                Chatting with: <strong style={{ color: 'var(--text-main)' }}>{selectedSmsLead?.name || 'No lead selected'}</strong>
+              </p>
+            </div>
             
-            <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '1rem', position: 'relative' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                <span>From: (555) 867-5309</span>
-                <span>To: Kelly (Lead)</span>
-              </div>
-              <div style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '0.75rem', borderRadius: '12px 12px 12px 2px', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>
-                Hi Kelly, this is Kool View confirming your site visit tomorrow at 10:00 AM. Reply C to confirm or R to reschedule.
-              </div>
-              <div style={{ backgroundColor: 'var(--border)', color: 'var(--text-main)', padding: '0.75rem', borderRadius: '12px 12px 2px 12px', fontSize: '0.875rem', lineHeight: 1.5, alignSelf: 'flex-end', marginLeft: 'auto', width: 'fit-content' }}>
-                C
-              </div>
+            <div style={{ flex: 1, backgroundColor: 'var(--bg-subtle)', padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {chatHistory.map((msg, idx) => (
+                <div key={idx} style={{ 
+                  alignSelf: msg.sender === 'us' ? 'flex-end' : 'flex-start',
+                  backgroundColor: msg.sender === 'us' ? 'var(--primary)' : 'var(--bg-surface)', 
+                  color: msg.sender === 'us' ? 'white' : 'var(--text-main)', 
+                  border: msg.sender === 'them' ? '1px solid var(--border)' : 'none',
+                  padding: '0.75rem', 
+                  borderRadius: msg.sender === 'us' ? '12px 12px 2px 12px' : '12px 12px 12px 2px', 
+                  fontSize: '0.875rem', 
+                  lineHeight: 1.5,
+                  maxWidth: '85%'
+                }}>
+                  {msg.text}
+                  <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', opacity: 0.7, textAlign: msg.sender === 'us' ? 'right' : 'left' }}>
+                    {msg.time}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.5rem', backgroundColor: 'var(--bg-surface)' }}>
+              <input 
+                type="text" 
+                value={smsText}
+                onChange={(e) => setSmsText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendSms()}
+                placeholder="Type SMS message..." 
+                style={{ flex: 1, padding: '0.75rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-full)', outline: 'none', fontSize: '0.875rem', backgroundColor: 'var(--bg-page)' }}
+              />
+              <button 
+                onClick={sendSms}
+                style={{ backgroundColor: 'var(--primary)', color: 'white', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none', transition: 'var(--transition)' }}
+              >
+                <Send size={16} style={{ marginLeft: '-2px' }} />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add Lead Modal */}
+      {/* Add Lead Modal & Details Modal code remains completely unchanged below */}
       <Modal 
         isOpen={isAddLeadOpen} 
         onClose={() => setIsAddLeadOpen(false)} 
@@ -177,7 +236,6 @@ export default function Leads() {
         </div>
       </Modal>
 
-      {/* Lead Details Modal */}
       <Modal 
         isOpen={!!selectedLead} 
         onClose={() => setSelectedLead(null)} 
