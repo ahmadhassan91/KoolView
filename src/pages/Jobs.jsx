@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Search, MoreVertical, FileText, IndianRupee } from 'lucide-react';
+import { Plus, Filter, Search, MoreVertical, FileText, CircleDollarSign } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Jobs() {
   const [activeTab, setActiveTab] = useState('active');
   const [selectedJob, setSelectedJob] = useState(null);
+  const [actionMessage, setActionMessage] = useState('');
 
-  const jobs = [
+  const [jobs, setJobs] = useState([
     { id: '4492', customer: 'Pam Beesly', address: '492 Artist Way', type: 'Sunroom', status: 'Awaiting Permit', nextAction: 'City Approval', progress: 25 },
     { id: '4493', customer: 'Dwight Schrute', address: '101 Farm Rd', type: 'Window Replacement', status: 'Factory Order', nextAction: 'Delivery Confirmation', progress: 60 },
     { id: '4494', customer: 'Jim Halpert', address: '87 Paper St', type: 'Patio Enclosure', status: 'Installation', nextAction: 'Final Inspection', progress: 85 },
     { id: '4495', customer: 'Stanley Hudson', address: '88 Pretzel St', type: 'Awning', status: 'Deposit Billed', nextAction: 'Measure & Specs', progress: 10 },
-  ];
+  ]);
 
   const getStatusBadge = (status) => {
     const map = {
@@ -22,6 +23,22 @@ export default function Jobs() {
       'Completed': 'success'
     };
     return `badge badge-${map[status] || 'secondary'}`;
+  };
+
+  const showToast = (msg) => {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(''), 3000);
+  };
+
+  const handleAction = (e, actionType, job) => {
+    e.stopPropagation(); // prevent opening the job details modal
+    if (actionType === 'doc') {
+      showToast(`Reviewing attached documents for Job #${job.id}`);
+    } else if (actionType === 'invoice') {
+      showToast(`Generating auto-filled invoice for Job #${job.id}`);
+    } else if (actionType === 'more') {
+      showToast(`Opening advanced options for Job #${job.id}`);
+    }
   };
 
   const JobTimeline = ({ job }) => {
@@ -61,7 +78,26 @@ export default function Jobs() {
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in relative">
+      {/* Toast Notification */}
+      {actionMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '50%',
+          transform: 'translateX(50%)',
+          backgroundColor: 'var(--text-main)',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: 'var(--radius-full)',
+          boxShadow: 'var(--shadow-float)',
+          zIndex: 1000,
+          animation: 'fadeInDown 0.3s ease-out'
+        }}>
+          {actionMessage}
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Production Jobs</h1>
@@ -142,13 +178,13 @@ export default function Jobs() {
                   </td>
                   <td style={{ padding: '1rem 1.5rem' }} onClick={(e) => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s' }} title="View Documents">
+                      <button onClick={(e) => handleAction(e, 'doc', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="View Documents">
                         <FileText size={18} />
                       </button>
-                      <button style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s' }} title="Generate Invoice">
-                        <IndianRupee size={18} />
+                      <button onClick={(e) => handleAction(e, 'invoice', job)} style={{ padding: '0.25rem', color: 'var(--primary)', transition: 'color 0.2s', cursor: 'pointer' }} title="Generate Invoice">
+                        <CircleDollarSign size={18} />
                       </button>
-                      <button style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s' }}>
+                      <button onClick={(e) => handleAction(e, 'more', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="More Options">
                         <MoreVertical size={18} />
                       </button>
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Download, Search, Filter, IndianRupee, Eye, Send, CheckCircle2 } from 'lucide-react';
+import { Plus, Download, Search, Filter, CircleDollarSign, Eye, Send, CheckCircle2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Billing() {

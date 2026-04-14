@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, CheckCircle2, Clock, IndianRupee, Users, TrendingUp, AlertCircle, FileText, ArrowRight, Briefcase } from 'lucide-react';
+import { Plus, CheckCircle2, Clock, CircleDollarSign, Users, TrendingUp, AlertCircle, FileText, ArrowRight, Briefcase } from 'lucide-react';
 
 const DashboardCard = ({ title, value, subtext, icon: Icon, trend, type = 'default' }) => {
   const getTrendColor = () => {
@@ -51,7 +51,7 @@ export default function Dashboard() {
   const activities = [
     { id: 1, type: 'lead', text: 'New lead assigned from HomeAdvisor: Michael Scott', time: '10 mins ago', icon: Users, color: 'primary' },
     { id: 2, type: 'job', text: 'Permit approved for Job #4492 (123 Elm St)', time: '1 hour ago', icon: CheckCircle2, color: 'success' },
-    { id: 3, type: 'invoice', text: 'Invoice #INV-204 paid by Jim Halpert', time: '3 hours ago', icon: IndianRupee, color: 'success' },
+    { id: 3, type: 'invoice', text: 'Invoice #INV-204 paid by Jim Halpert', time: '3 hours ago', icon: CircleDollarSign, color: 'success' },
     { id: 4, type: 'doc', text: 'Contract uploaded for Job #4495', time: 'Yesterday', icon: FileText, color: 'primary' },
   ];
 
