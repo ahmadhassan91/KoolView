@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, CheckCircle2, Clock, IndianRupee, Users, TrendingUp, AlertCircle, FileText, ArrowRight } from 'lucide-react';
+import { Plus, CheckCircle2, Clock, IndianRupee, Users, TrendingUp, AlertCircle, FileText, ArrowRight, Briefcase } from 'lucide-react';
 
 const DashboardCard = ({ title, value, subtext, icon: Icon, trend, type = 'default' }) => {
   const getTrendColor = () => {
