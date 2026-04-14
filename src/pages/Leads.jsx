@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Phone, Calendar as CalendarIcon, UserPlus, Clock, Send } from 'lucide-react';
+import { Plus, MessageSquare, Phone, Calendar as CalendarIcon, UserPlus, Clock, Send, CheckCircle2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Leads() {
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [actionMessage, setActionMessage] = useState('');
 
   const [leads, setLeads] = useState([
     { id: 'L-101', name: 'Angela Martin', source: 'HomeAdvisor', phone: '(555) 019-2831', status: 'New', time: '2h ago', notes: 'Looking for a 3-season sunroom.' },
@@ -24,10 +25,9 @@ export default function Leads() {
     { title: 'Quoted', color: 'primary' },
   ];
 
-  /* --- Drag and Drop Handlers --- */
   const handleDragStart = (e, leadId) => {
     e.dataTransfer.setData('leadId', leadId);
-    e.currentTarget.style.opacity = '0.5'; // Visual feedback
+    e.currentTarget.style.opacity = '0.5';
   };
 
   const handleDragEnd = (e) => {
@@ -35,7 +35,7 @@ export default function Leads() {
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault(); // Required to allow dropping
+    e.preventDefault();
   };
 
   const handleDrop = (e, newStatus) => {
@@ -46,7 +46,6 @@ export default function Leads() {
     ));
   };
 
-  /* --- Interactive SMS Handlers --- */
   const [selectedSmsLead, setSelectedSmsLead] = useState(leads.find(l => l.name === 'Kelly Kapoor'));
   const [smsText, setSmsText] = useState('');
   const [chatHistory, setChatHistory] = useState([
@@ -65,15 +64,47 @@ export default function Leads() {
     if (!smsText.trim()) return;
     setChatHistory([...chatHistory, { sender: 'us', text: smsText, time: 'Now' }]);
     setSmsText('');
-    
-    // Simulate a fake reply after 2 seconds for the demo!
     setTimeout(() => {
       setChatHistory(prev => [...prev, { sender: 'them', text: "Sounds great, looking forward to it!", time: 'Now' }]);
     }, 2000);
   };
 
+  const handleConvertToCustomer = () => {
+    if (!selectedLead) return;
+    
+    // Simulate API call and state update
+    setLeads(leads.filter(l => l.id !== selectedLead.id));
+    setActionMessage(`${selectedLead.name} was successfully converted to a Customer!`);
+    setSelectedLead(null);
+    
+    setTimeout(() => setActionMessage(''), 4000);
+  };
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in relative">
+      {/* Toast Notification */}
+      {actionMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '50%',
+          transform: 'translateX(50%)',
+          backgroundColor: 'var(--success)',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: 'var(--radius-full)',
+          boxShadow: 'var(--shadow-float)',
+          zIndex: 1000,
+          animation: 'fadeInDown 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontWeight: 500
+        }}>
+          <CheckCircle2 size={18} /> {actionMessage}
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Leads & Scheduling</h1>
@@ -203,7 +234,6 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Add Lead Modal & Details Modal code remains completely unchanged below */}
       <Modal 
         isOpen={isAddLeadOpen} 
         onClose={() => setIsAddLeadOpen(false)} 
@@ -240,7 +270,17 @@ export default function Leads() {
         isOpen={!!selectedLead} 
         onClose={() => setSelectedLead(null)} 
         title={`Lead: ${selectedLead?.name}`}
-        footer={<button className="btn btn-primary">Schedule Appointment</button>}
+        footer={
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
+             <button className="btn btn-secondary" onClick={() => setSelectedLead(null)}>Close</button>
+             <div style={{ display: 'flex', gap: '1rem' }}>
+               <button className="btn btn-primary" style={{ backgroundColor: 'var(--success)' }} onClick={handleConvertToCustomer}>
+                 <UserPlus size={16} /> Convert to Customer
+               </button>
+               <button className="btn btn-primary">Schedule Appointment</button>
+             </div>
+          </div>
+        }
       >
         {selectedLead && (
           <div>
@@ -258,9 +298,15 @@ export default function Leads() {
                 <p style={{ fontWeight: 600 }}>{selectedLead.source}</p>
               </div>
             </div>
+            
+            <div className="form-group">
+              <label className="form-label">Address & Property Location</label>
+              <input type="text" className="form-input" placeholder="Pending site visit..." />
+            </div>
+
             <div className="form-group">
               <label className="form-label">Notes</label>
-              <p style={{ fontSize: '0.875rem', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: '0.875rem', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-surface)' }}>
                 {selectedLead.notes}
               </p>
             </div>

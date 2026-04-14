@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Search, MoreVertical, FileText, CircleDollarSign } from 'lucide-react';
+import { Plus, Filter, Search, MoreVertical, FileText, CircleDollarSign, Link as LinkIcon } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Jobs() {
@@ -8,10 +8,11 @@ export default function Jobs() {
   const [actionMessage, setActionMessage] = useState('');
 
   const [jobs, setJobs] = useState([
-    { id: '4492', customer: 'Pam Beesly', address: '492 Artist Way', type: 'Sunroom', status: 'Awaiting Permit', nextAction: 'City Approval', progress: 25 },
-    { id: '4493', customer: 'Dwight Schrute', address: '101 Farm Rd', type: 'Window Replacement', status: 'Factory Order', nextAction: 'Delivery Confirmation', progress: 60 },
-    { id: '4494', customer: 'Jim Halpert', address: '87 Paper St', type: 'Patio Enclosure', status: 'Installation', nextAction: 'Final Inspection', progress: 85 },
-    { id: '4495', customer: 'Stanley Hudson', address: '88 Pretzel St', type: 'Awning', status: 'Deposit Billed', nextAction: 'Measure & Specs', progress: 10 },
+    { id: '4492', customer: 'Pam Beesly', entityType: 'Customer', address: '492 Artist Way', type: 'Sunroom', status: 'Awaiting Permit', nextAction: 'City Approval', progress: 25 },
+    { id: '4493', customer: 'Dwight Schrute', entityType: 'Customer', address: '101 Farm Rd', type: 'Window Replacement', status: 'Factory Order', nextAction: 'Delivery Confirmation', progress: 60 },
+    { id: '4494', customer: 'Jim Halpert', entityType: 'Customer', address: '87 Paper St', type: 'Patio Enclosure', status: 'Installation', nextAction: 'Final Inspection', progress: 85 },
+    { id: '4495', customer: 'Stanley Hudson', entityType: 'Customer', address: '88 Pretzel St', type: 'Awning', status: 'Deposit Billed', nextAction: 'Measure & Specs', progress: 10 },
+    { id: '4496', customer: 'Kelly Kapoor', entityType: 'Lead', address: '55 Fashion Ln', type: 'Initial Site Survey', status: 'Inbound Review', nextAction: 'Dispatch Surveyor', progress: 0 },
   ]);
 
   const getStatusBadge = (status) => {
@@ -20,6 +21,7 @@ export default function Jobs() {
       'Awaiting Permit': 'warning',
       'Factory Order': 'primary',
       'Installation': 'warning',
+      'Inbound Review': 'secondary',
       'Completed': 'success'
     };
     return `badge badge-${map[status] || 'secondary'}`;
@@ -31,17 +33,35 @@ export default function Jobs() {
   };
 
   const handleAction = (e, actionType, job) => {
-    e.stopPropagation(); // prevent opening the job details modal
+    e.stopPropagation();
     if (actionType === 'doc') {
       showToast(`Reviewing attached documents for Job #${job.id}`);
     } else if (actionType === 'invoice') {
-      showToast(`Generating auto-filled invoice for Job #${job.id}`);
+      if (job.entityType === 'Lead') {
+        showToast(`Cannot generate invoice. ${job.customer} is still a pre-sale Lead.`);
+      } else {
+        showToast(`Generating auto-filled invoice for Job #${job.id}`);
+      }
     } else if (actionType === 'more') {
       showToast(`Opening advanced options for Job #${job.id}`);
     }
   };
 
   const JobTimeline = ({ job }) => {
+    if (job.entityType === 'Lead') {
+      return (
+         <div className="timeline">
+           <div className="timeline-item active">
+             <div className="timeline-dot"></div>
+             <div>
+               <h5 style={{ margin: 0, fontWeight: 700 }}>Pre-Sale Appraisal</h5>
+               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Status: {job.status}</p>
+             </div>
+           </div>
+         </div>
+      );
+    }
+
     const milestones = [
       { key: 'Deposit Billed', label: '1. Deposit Billed' },
       { key: 'Awaiting Permit', label: '2. Permit Procurement' },
@@ -50,8 +70,6 @@ export default function Jobs() {
       { key: 'Completed', label: '5. Post-Install & Final Bill' }
     ];
 
-    let currentPassed = false;
-    
     return (
       <div className="timeline">
         {milestones.map((m, idx) => {
@@ -77,9 +95,11 @@ export default function Jobs() {
     );
   };
 
+  // Create Job specific state
+  const [newJobEntity, setNewJobEntity] = useState('Customer');
+
   return (
     <div className="animate-fade-in relative">
-      {/* Toast Notification */}
       {actionMessage && (
         <div style={{
           position: 'fixed',
@@ -100,8 +120,8 @@ export default function Jobs() {
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Production Jobs</h1>
-          <p className="page-subtitle">Track job progress, milestones, and production pipeline.</p>
+          <h1 className="page-title">Internal Jobs</h1>
+          <p className="page-subtitle">Track project progress mapped to your leads and customers.</p>
         </div>
         <button className="btn btn-primary" onClick={() => setSelectedJob({ isNew: true })}>
           <Plus size={18} /> New Job
@@ -109,14 +129,13 @@ export default function Jobs() {
       </div>
 
       <div className="card" style={{ padding: '0' }}>
-        {/* Table Toolbar */}
         <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button 
               style={{ fontWeight: 500, color: activeTab === 'active' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'active' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem' }}
               onClick={() => setActiveTab('active')}
             >
-              Active Jobs (30)
+              Active Jobs ({jobs.length})
             </button>
             <button 
               style={{ fontWeight: 500, color: activeTab === 'completed' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'completed' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem' }}
@@ -137,13 +156,12 @@ export default function Jobs() {
           </div>
         </div>
 
-        {/* Table */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Job ID</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Customer / Address</th>
+                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Entity Link</th>
                 <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Project Type</th>
                 <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Current Status</th>
                 <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Progress</th>
@@ -160,8 +178,15 @@ export default function Jobs() {
                 >
                   <td style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>#{job.id}</td>
                   <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ fontWeight: 500 }}>{job.customer}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{job.address}</div>
+                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <LinkIcon size={12} color="var(--primary)" /> {job.customer}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      <span className={`badge badge-${job.entityType === 'Customer' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
+                        {job.entityType}
+                      </span>
+                      <span style={{ marginLeft: '0.5rem' }}>{job.address}</span>
+                    </div>
                   </td>
                   <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.type}</td>
                   <td style={{ padding: '1rem 1.5rem' }}>
@@ -181,7 +206,7 @@ export default function Jobs() {
                       <button onClick={(e) => handleAction(e, 'doc', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="View Documents">
                         <FileText size={18} />
                       </button>
-                      <button onClick={(e) => handleAction(e, 'invoice', job)} style={{ padding: '0.25rem', color: 'var(--primary)', transition: 'color 0.2s', cursor: 'pointer' }} title="Generate Invoice">
+                      <button onClick={(e) => handleAction(e, 'invoice', job)} style={{ padding: '0.25rem', color: job.entityType === 'Lead' ? 'var(--text-muted)' : 'var(--primary)', opacity: job.entityType === 'Lead' ? 0.3 : 1, transition: 'color 0.2s', cursor: 'pointer' }} title="Generate Invoice">
                         <CircleDollarSign size={18} />
                       </button>
                       <button onClick={(e) => handleAction(e, 'more', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="More Options">
@@ -196,58 +221,86 @@ export default function Jobs() {
         </div>
       </div>
 
-      {/* Dynamic Job Tracker Modal */}
       <Modal 
         isOpen={!!selectedJob} 
         onClose={() => setSelectedJob(null)} 
-        title={selectedJob?.isNew ? 'Create New Job' : `Job Timeline: ${selectedJob?.address}`}
+        title={selectedJob?.isNew ? 'Create New Job' : `Job Details: #${selectedJob?.id}`}
         footer={
           selectedJob?.isNew ? 
-            <><button className="btn btn-secondary" onClick={() => setSelectedJob(null)}>Cancel</button><button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Create Job</button></> 
-            : <button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Update Status</button>
+            <><button className="btn btn-secondary" onClick={() => setSelectedJob(null)}>Cancel</button><button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Allocate Job ID</button></> 
+            : <button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Save Status</button>
         }
       >
         {selectedJob?.isNew ? (
           <div>
+             <div className="form-group" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                   <input type="radio" name="entityType" checked={newJobEntity === 'Customer'} onChange={() => setNewJobEntity('Customer')} /> 
+                   Link to Customer (Production Job)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                   <input type="radio" name="entityType" checked={newJobEntity === 'Lead'} onChange={() => setNewJobEntity('Lead')} /> 
+                   Link to Lead (Pre-Sale Appraisal)
+                </label>
+             </div>
+
              <div className="form-group">
-                <label className="form-label">Link Lead (Optional)</label>
+                <label className="form-label">
+                   {newJobEntity === 'Customer' ? 'Select Existing Customer Database Record' : 'Select Pipeline Lead'}
+                </label>
                 <select className="form-input">
-                  <option>-- Select Linked Lead --</option>
-                  <option>Kelly Kapoor</option>
-                  <option>Oscar Martinez</option>
+                  {newJobEntity === 'Customer' ? (
+                     <>
+                     <option>Pam Beesly</option>
+                     <option>Jim Halpert</option>
+                     <option>Michael Scott</option>
+                     </>
+                  ) : (
+                     <>
+                     <option>Toby Flenderson</option>
+                     <option>Kelly Kapoor</option>
+                     <option>Creed Bratton</option>
+                     </>
+                  )}
                 </select>
              </div>
-             <div className="form-group">
-                <label className="form-label">Property Address</label>
-                <input type="text" className="form-input" placeholder="e.g. 123 Main St" />
-             </div>
+
              <div className="form-group">
                 <label className="form-label">Project Type</label>
                 <select className="form-input">
-                  <option>Sunroom installation</option>
+                  <option>Sunroom Install</option>
                   <option>Window Replacement</option>
                   <option>Patio Enclosure</option>
+                  <option>Initial Site Appraisal</option>
                 </select>
              </div>
+
+             {newJobEntity === 'Customer' && (
+                <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                   <p style={{ margin: 0, fontSize: '0.875rem', display: 'flex', gap: '0.5rem' }}><LinkIcon size={14}/> Job will be automatically mapped to the selected Customer's permanent file.</p>
+                </div>
+             )}
           </div>
         ) : (
           <div>
-            <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Customer</p>
-                <p style={{ fontWeight: 600 }}>{selectedJob?.customer}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Linked {selectedJob?.entityType}</p>
+                <p style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <LinkIcon size={12} color="var(--primary)"/> {selectedJob?.customer}
+                </p>
               </div>
               <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Project</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Project Scope</p>
                 <p style={{ fontWeight: 600 }}>{selectedJob?.type}</p>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Current Status</p>
-                <p className={getStatusBadge(selectedJob?.status)}>{selectedJob?.status}</p>
+                <p className={getStatusBadge(selectedJob?.status)} style={{ margin: '0.25rem 0 0 0' }}>{selectedJob?.status}</p>
               </div>
             </div>
 
-            <h4 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Production Milestones</h4>
+            <h4 style={{ marginBottom: '1rem', fontSize: '1rem' }}>{selectedJob?.entityType === 'Customer' ? 'Production Milestones' : 'Lead Tracking Workflow'}</h4>
             {selectedJob && <JobTimeline job={selectedJob} />}
           </div>
         )}

@@ -1,10 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Briefcase, FileText, FileSpreadsheet, Settings, Bell, Search, Plus } from 'lucide-react';
+import { LayoutDashboard, Users, UserSquare, Calendar, Briefcase, Truck, FileText, FileSpreadsheet, Settings, Bell, Search, Plus } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
+import Customers from './pages/Customers';
 import Jobs from './pages/Jobs';
+import FieldOps from './pages/FieldOps';
 import Documents from './pages/Documents';
 import Billing from './pages/Billing';
 
@@ -33,7 +35,9 @@ function Layout({ children }) {
         <nav className="sidebar-nav">
           <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/leads" icon={Users} label="Leads & Schedule" />
-          <NavItem to="/jobs" icon={Briefcase} label="Production Jobs" />
+          <NavItem to="/customers" icon={UserSquare} label="Customers CRM" />
+          <NavItem to="/jobs" icon={Briefcase} label="Internal Jobs" />
+          <NavItem to="/field-ops" icon={Truck} label="Field Operations" />
           <NavItem to="/documents" icon={FileText} label="Documents" />
           <NavItem to="/billing" icon={FileSpreadsheet} label="Billing" />
         </nav>
@@ -100,7 +104,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
+          <Route path="/customers" element={<Customers />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/field-ops" element={<FieldOps />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings" element={<div className="animate-fade-in"><h1 className="page-title">Settings</h1><p className="page-subtitle">Configure your dashboard preferences.</p></div>} />
