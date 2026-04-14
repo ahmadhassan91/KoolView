@@ -114,7 +114,7 @@ export default function Dashboard() {
                   flexShrink: 0,
                   zIndex: 1
                 }}>
-                  <item.icon size={16} />
+                  {React.createElement(item.icon, { size: 16 })}
                 </div>
                 <div>
                   <p style={{ fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{item.text}</p>
