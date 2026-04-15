@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MapPin, Truck, Calendar, Clock, AlertTriangle, CheckSquare, UploadCloud, Play } from 'lucide-react';
+import { Plus, MapPin, Truck, Calendar, Clock, AlertTriangle, CheckSquare, UploadCloud, Play, CloudRain, Package, Smartphone, Edit3 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function FieldOps() {
@@ -13,8 +13,8 @@ export default function FieldOps() {
       name: 'Crew Alpha (Install)',
       color: 'primary',
       visits: [
-        { id: 'V-101', time: '08:00 AM - 12:00 PM', customer: 'Pam Beesly', address: '492 Artist Way', type: 'Sunroom Framework', status: 'In Progress', progress: 40 },
-        { id: 'V-102', time: '01:00 PM - 04:00 PM', customer: 'Dwight Schrute', address: '101 Farm Rd', type: 'Window Measurements', status: 'Scheduled', progress: 0 }
+        { id: 'V-101', time: '08:00 AM - 12:00 PM', customer: 'Pam Beesly', address: '492 Artist Way', type: 'Sunroom Framework', status: 'In Progress', progress: 40, manifest: ['14x Alum. Extrusions', '8x Glass Panels', '2x Door Frames'], manifestLoaded: true },
+        { id: 'V-102', time: '01:00 PM - 04:00 PM', customer: 'Dwight Schrute', address: '101 Farm Rd', type: 'Window Measurements', status: 'Scheduled', progress: 0, manifest: ['Measurement Kit', 'Laser Level'], manifestLoaded: true }
       ]
     },
     {
@@ -22,16 +22,16 @@ export default function FieldOps() {
       name: 'Crew Bravo (Install)',
       color: 'warning',
       visits: [
-        { id: 'V-103', time: '09:00 AM - 02:00 PM', customer: 'Jim Halpert', address: '87 Paper St', type: 'Patio Enclosure', status: 'In Progress', progress: 80 },
-        { id: 'V-104', time: '03:00 PM - 06:00 PM', customer: 'Stanley Hudson', address: '88 Pretzel St', type: 'Awning Delivery', status: 'Scheduled', progress: 0 }
+        { id: 'V-103', time: '09:00 AM - 02:00 PM', customer: 'Jim Halpert', address: '87 Paper St', type: 'Patio Enclosure', status: 'In Progress', progress: 80, manifest: ['Roofing Sheets 12x', 'Caulk x6', 'Screws (Bulk)'], manifestLoaded: true },
+        { id: 'V-104', time: '03:00 PM - 06:00 PM', customer: 'Stanley Hudson', address: '88 Pretzel St', type: 'Awning Delivery', status: 'Delayed', progress: 0, manifest: ['Custom Awning 14ft', 'Mounting Brackets'], manifestLoaded: false }
       ]
     },
     {
       id: 'crew-charlie',
-      name: 'Crew Charlie (Service/Quote)',
+      name: 'Crew Charlie (Service)',
       color: 'success',
       visits: [
-        { id: 'V-105', time: '10:00 AM - 11:30 AM', customer: 'Kelly Kapoor', address: '55 Fashion Ln', type: 'Initial Site Survey', status: 'Completed', progress: 100 }
+        { id: 'V-105', time: '10:00 AM - 11:30 AM', customer: 'Kelly Kapoor', address: '55 Fashion Ln', type: 'Initial Site Survey', status: 'Completed', progress: 100, manifest: ['Drone Camera', 'Tape Measure'], manifestLoaded: true }
       ]
     }
   ];
@@ -48,7 +48,7 @@ export default function FieldOps() {
 
   const handleAction = (msg) => {
     setActionMessage(msg);
-    setTimeout(() => setActionMessage(''), 3000);
+    setTimeout(() => setActionMessage(''), 4000);
   };
 
   return (
@@ -60,53 +60,44 @@ export default function FieldOps() {
           top: '20px',
           right: '50%',
           transform: 'translateX(50%)',
-          backgroundColor: 'var(--text-main)',
+          backgroundColor: 'var(--success)',
           color: 'white',
           padding: '1rem 2rem',
           borderRadius: 'var(--radius-full)',
           boxShadow: 'var(--shadow-float)',
           zIndex: 1000,
-          animation: 'fadeInDown 0.3s ease-out'
+          animation: 'fadeInDown 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontWeight: 500
         }}>
-          {actionMessage}
+          <CheckSquare size={18} /> {actionMessage}
         </div>
       )}
 
       <div className="page-header">
         <div>
           <h1 className="page-title">Field Operations</h1>
-          <p className="page-subtitle">Dispatch crews, track site visits, and manage labor schedules.</p>
+          <p className="page-subtitle">Dispatch crews, track truck manifests, and manage labor schedules.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          
+          {/* Weather Intelligence Widget mockup */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--bg-subtle)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+             <CloudRain size={20} color="var(--primary)" />
+             <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600 }}>Scranton, PA</p>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>45°F • 20% Precip (Safe)</p>
+             </div>
+          </div>
+
           <button className="btn btn-secondary">
             <Calendar size={18} /> {activeDate}
           </button>
           <button className="btn btn-primary">
             <Truck size={18} /> Dispatch Crew
           </button>
-        </div>
-      </div>
-
-      <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
-        <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Active Crews</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-             <h3 style={{ fontSize: '2rem', fontWeight: 700 }}>3</h3>
-             <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>100% Deployed</span>
-          </div>
-        </div>
-        <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Total Visits Today</p>
-          <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>5</h3>
-        </div>
-        <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Completed</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-             <h3 style={{ fontSize: '2rem', fontWeight: 700 }}>1</h3>
-             <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-full)' }}>
-                <div style={{ width: '20%', height: '100%', backgroundColor: 'var(--text-main)', borderRadius: 'var(--radius-full)' }}></div>
-             </div>
-          </div>
         </div>
       </div>
 
@@ -141,12 +132,22 @@ export default function FieldOps() {
                     </div>
                     
                     <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem' }}>{visit.type}</h4>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: 500 }}>{visit.customer}</p>
+                    <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', fontWeight: 500 }}>{visit.customer}</p>
                     
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                        <MapPin size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
                        <span>{visit.address}</span>
                     </div>
+
+                    {/* Integrated Material Manifest Tag */}
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: visit.manifestLoaded ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                          <Package size={12} /> 
+                          {visit.manifestLoaded ? 'Truck Loaded' : 'Missing Materials'}
+                       </div>
+                       <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: '4px' }}>{visit.manifest.length} Items</span>
+                    </div>
+
                   </div>
                ))}
                
@@ -173,60 +174,98 @@ export default function FieldOps() {
       </div>
 
       {/* Field Worker App Simulation Modal */}
-      <Modal 
-        isOpen={!!selectedVisit} 
-        onClose={() => setSelectedVisit(null)} 
-        title={`Field Report: ${selectedVisit?.id}`}
-        footer={
-          <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleAction(`Delay notice sent to ${selectedVisit?.customer}`)}>
-              <AlertTriangle size={16} /> Report Delay
-            </button>
-            <button className="btn btn-primary" style={{ flex: 2 }} onClick={() => { handleAction(`Visit ${selectedVisit?.id} marked as complete.`); setSelectedVisit(null); }}>
-              <CheckSquare size={16} /> Mark Complete
-            </button>
-          </div>
-        }
-      >
-        {selectedVisit && (
-          <div>
-            <div style={{ backgroundColor: 'black', color: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', marginBottom: '1.5rem' }}>
-               <h2 style={{ margin: '0 0 0.5rem 0' }}>{selectedVisit.type}</h2>
-               <p style={{ fontSize: '0.875rem', opacity: 0.8, margin: '0 0 1rem 0' }}>{selectedVisit.customer}</p>
-               
-               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                   <MapPin color="var(--primary)" />
-                   <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.4 }}>{selectedVisit.address}<br/><span style={{ opacity: 0.6 }}>Navigate to site...</span></p>
-                 </div>
-                 <button style={{ backgroundColor: 'var(--primary)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}>
-                   <Play size={18} style={{ marginLeft: '2px' }} />
-                 </button>
-               </div>
-            </div>
+      {selectedVisit && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card animate-fade-in" style={{ width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'var(--bg-page)', padding: 0 }}>
+             
+             {/* iPad Header */}
+             <div style={{ padding: '1rem 1.5rem', backgroundColor: 'black', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Site Execution: {selectedVisit.id}</h3>
+                <button style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }} onClick={() => setSelectedVisit(null)}>Close</button>
+             </div>
 
-            <div className="form-group">
-                <label className="form-label">On-Site Notes</label>
-                <textarea className="form-input" rows="4" placeholder="Enter findings, progress updates, or issues..." defaultValue={selectedVisit.status === 'Completed' ? "Customer signed off on initial measurements. Structure looks sound for standard track bracket." : ""}></textarea>
-            </div>
-
-            <div className="form-group">
-                <label className="form-label">Site Photos</label>
-                <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                   <UploadCloud size={32} style={{ marginBottom: '0.5rem' }} />
-                   <p style={{ margin: 0, fontSize: '0.875rem' }}>Tap to capture or upload photos</p>
+             <div style={{ padding: '1.5rem' }}>
+                
+                {/* Geolocation & Routing */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
+                   <div>
+                      <h2 style={{ margin: '0 0 0.25rem 0' }}>{selectedVisit.customer}</h2>
+                      <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, color: 'var(--primary)' }}>{selectedVisit.type}</p>
+                      <p style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                         <MapPin size={14} style={{ marginTop: '2px' }} />
+                         {selectedVisit.address}
+                      </p>
+                   </div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => handleAction('Opening GPS Turn-by-Turn Navigation...')}>
+                         <Play size={14} /> Start Route
+                      </button>
+                      <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => handleAction(`"On-the-way" SMS tracking link sent to ${selectedVisit.customer}.`)}>
+                         <Smartphone size={14} /> Send ETA Text
+                      </button>
+                   </div>
                 </div>
-            </div>
-            
-            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem' }}>
-                <input type="checkbox" defaultChecked={selectedVisit.status === 'Completed'} style={{ width: '18px', height: '18px' }} />
-                Customer Signature Collected
-              </label>
-            </div>
+
+                {/* Job Manifest Validation */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                   <h4 style={{ margin: '0 0 0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Package size={16} color="var(--primary)" /> Material Manifest Lock
+                   </h4>
+                   <div style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', border: `1px solid ${selectedVisit.manifestLoaded ? 'var(--success)' : 'var(--danger)'}` }}>
+                      <ul style={{ margin: 0, padding: '0 0 0 1.5rem', fontSize: '0.875rem', color: 'var(--text-main)' }}>
+                         {selectedVisit.manifest.map((item, idx) => (
+                            <li key={idx} style={{ marginBottom: '0.25rem' }}>{item}</li>
+                         ))}
+                      </ul>
+                      {!selectedVisit.manifestLoaded && (
+                         <div style={{ marginTop: '1rem', color: 'var(--danger)', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <AlertTriangle size={14} /> Warning: Required materials missing from Truck Inventory.
+                         </div>
+                      )}
+                   </div>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label">On-Site Media</label>
+                    <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'var(--transition)' }} className="hover-lift" onClick={() => handleAction('Opening iPad Camera Roll...')}>
+                       <UploadCloud size={24} style={{ marginBottom: '0.5rem' }} />
+                       <p style={{ margin: 0, fontSize: '0.875rem' }}>Tap to capture Before/After photos</p>
+                    </div>
+                </div>
+                
+                {/* Advanced Digital Signature Canvas Mockup */}
+                <div style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                   <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Edit3 size={16} color="var(--primary)" /> Client Sign-Off
+                   </h4>
+                   
+                   <div style={{ width: '100%', height: '120px', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      {selectedVisit.status === 'Completed' ? (
+                         <img src={`data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><path d="M10 40 Q 60 10 100 50 T 190 30" fill="transparent" stroke="black" stroke-width="2"/></svg>`} alt="Signature" style={{ opacity: 0.8 }} />
+                      ) : (
+                         <span style={{ color: 'var(--text-light)', fontSize: '0.875rem', fontStyle: 'italic' }}>Sign in box above line</span>
+                      )}
+                      <div style={{ position: 'absolute', bottom: '20px', left: '20px', right: '20px', height: '1px', backgroundColor: 'var(--border)' }}></div>
+                   </div>
+
+                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      By signing, {selectedVisit.customer} acknowledges satisfactory completion of work as outlined in quote '{selectedVisit.type}'.
+                   </p>
+                </div>
+
+                <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+                  <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center' }} onClick={() => handleAction('Delay warning sent to operations.')}>
+                    <AlertTriangle size={16} /> Report Delay
+                  </button>
+                  <button className="btn btn-primary" style={{ flex: 2, display: 'flex', justifyContent: 'center' }} onClick={() => { handleAction(`Job completion and signature synchronized to cloud.`); setSelectedVisit(null); }}>
+                    <CheckSquare size={16} /> Complete & Sync
+                  </button>
+                </div>
+
+             </div>
           </div>
-        )}
-      </Modal>
+        </div>
+      )}
 
     </div>
   );

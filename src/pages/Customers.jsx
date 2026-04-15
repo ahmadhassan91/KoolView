@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Phone, Mail, MapPin, Eye, Briefcase, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Mail, MapPin, Eye, Briefcase, FileText, Image as ImageIcon, Home, TrendingUp, Download } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Customers() {
@@ -15,8 +15,21 @@ export default function Customers() {
       email: 'pam@example.com', 
       ltv: '$2,500', 
       status: 'Active',
+      property: {
+        type: 'Single Family',
+        yearBuilt: '1998',
+        sqFt: '1,850',
+        estValue: '$285,000'
+      },
+      financials: {
+        billed: '$2,500',
+        outstanding: '$1,250',
+        margin: '32%'
+      },
       history: [
-        { date: 'Oct 2023', type: 'Job', desc: 'Sunroom Installation (Job #4492)', amount: '$2,500' }
+        { date: 'Oct 2023', type: 'Job', desc: 'Sunroom Installation (Job #4492)', amount: '$2,500' },
+        { date: 'Sep 2023', type: 'Email', desc: 'Sent "Pre-Winter Sunroom Prep" marketing email', amount: '--' },
+        { date: 'Sep 2023', type: 'Quote', desc: 'Delivered initial estimate via Kool View Portal', amount: '--' }
       ]
     },
     { 
@@ -27,6 +40,17 @@ export default function Customers() {
       email: 'jim@example.com', 
       ltv: '$8,200', 
       status: 'Active',
+      property: {
+        type: 'Townhouse',
+        yearBuilt: '2005',
+        sqFt: '2,100',
+        estValue: '$345,000'
+      },
+      financials: {
+        billed: '$8,200',
+        outstanding: '$0',
+        margin: '41%'
+      },
       history: [
         { date: 'Sep 2023', type: 'Job', desc: 'Patio Enclosure (Job #4494)', amount: '$8,200' }
       ]
@@ -39,33 +63,20 @@ export default function Customers() {
       email: 'michael@example.com', 
       ltv: '$18,500', 
       status: 'Past Client',
+      property: {
+        type: 'Condominium',
+        yearBuilt: '2010',
+        sqFt: '1,200',
+        estValue: '$195,000'
+      },
+      financials: {
+        billed: '$18,500',
+        outstanding: '$0',
+        margin: '38%'
+      },
       history: [
         { date: 'Jan 2022', type: 'Job', desc: 'Master Bedroom Windows', amount: '$12,000' },
         { date: 'Mar 2023', type: 'Job', desc: 'Front Door Replacement', amount: '$6,500' }
-      ]
-    },
-    { 
-      id: 'C-1004', 
-      name: 'Stanley Hudson', 
-      address: '88 Pretzel St, Scranton, PA', 
-      phone: '(555) 888-9999', 
-      email: 'shudson@example.com', 
-      ltv: '$1,500', 
-      status: 'Active',
-      history: [
-        { date: 'Oct 2023', type: 'Job', desc: 'Awning Installation (Job #4495)', amount: '$1,500' }
-      ]
-    },
-    { 
-      id: 'C-1005', 
-      name: 'Angela Martin', 
-      address: '4 猫 St, Scranton, PA', 
-      phone: '(555) 019-2831', 
-      email: 'angela@example.com', 
-      ltv: '$3,200', 
-      status: 'Past Client',
-      history: [
-        { date: 'Aug 2023', type: 'Job', desc: 'Window Replacement', amount: '$3,200' }
       ]
     }
   ];
@@ -82,7 +93,7 @@ export default function Customers() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Customers CRM</h1>
-          <p className="page-subtitle">Manage all active and past clients, LTV, and historical jobs.</p>
+          <p className="page-subtitle">Manage all active and past clients, property intelligence, and historical jobs.</p>
         </div>
         <button className="btn btn-primary" onClick={() => setSelectedCustomer({ isNew: true })}>
           <Plus size={18} /> New Customer
@@ -91,16 +102,19 @@ export default function Customers() {
 
       <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
         <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Total Customers</p>
-          <h3 style={{ fontSize: '2rem', fontWeight: 700 }}>{customers.length}</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Total Custom LTV</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+             <h3 style={{ fontSize: '2rem', fontWeight: 700 }}>$1.4M</h3>
+             <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>+12% YTD</span>
+          </div>
         </div>
         <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Active Projects</p>
-          <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>3</h3>
+          <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>24</h3>
         </div>
         <div className="card" style={{ gridColumn: 'span 4', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Avg Lifetime Value</p>
-          <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--success)' }}>$6,780</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Avg Target Margin</p>
+          <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--success)' }}>36.5%</h3>
         </div>
       </div>
 
@@ -199,102 +213,192 @@ export default function Customers() {
       </div>
 
       {/* Customer Profile / Form Modal */}
-      <Modal 
-        isOpen={!!selectedCustomer} 
-        onClose={() => setSelectedCustomer(null)} 
-        title={selectedCustomer?.isNew ? 'Add New Customer' : `Customer Profile: ${selectedCustomer?.name}`}
-        footer={
-          selectedCustomer?.isNew ? 
-            <><button className="btn btn-secondary" onClick={() => setSelectedCustomer(null)}>Cancel</button><button className="btn btn-primary" onClick={() => setSelectedCustomer(null)}>Save Customer</button></> 
-            : <button className="btn btn-primary" onClick={() => setSelectedCustomer(null)}>Close</button>
-        }
-      >
-        {selectedCustomer?.isNew ? (
-          <div>
-            <div className="form-group">
-                <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" placeholder="e.g. Toby Flenderson" />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Phone</label>
-                  <input type="tel" className="form-input" placeholder="(555) 000-0000" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input type="email" className="form-input" placeholder="email@example.com" />
-                </div>
-            </div>
-            <div className="form-group">
-                <label className="form-label">Primary Property Address</label>
-                <input type="text" className="form-input" placeholder="123 Street Name, City, State ZIP" />
-            </div>
-          </div>
-        ) : selectedCustomer && (
-          <div>
-            {/* Split Profile Layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      {selectedCustomer && !selectedCustomer.isNew && (
+         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="card animate-fade-in" style={{ width: '90%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'var(--bg-page)', padding: 0 }}>
                
-               {/* Left Column: Info */}
-               <div>
-                 <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
-                   <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-                     {selectedCustomer.name.charAt(0)}
-                   </div>
-                   <h3 style={{ margin: '0 0 0.5rem 0' }}>{selectedCustomer.name}</h3>
-                   <span className={`badge badge-${selectedCustomer.status === 'Active' ? 'success' : 'secondary'}`} style={{ marginBottom: '1.5rem', display: 'inline-block' }}>
-                      {selectedCustomer.status}
-                   </span>
-
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                     <div>
-                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Contact</p>
-                       <p style={{ fontSize: '0.875rem' }}><Phone size={12} style={{marginRight: '4px'}}/>{selectedCustomer.phone}</p>
-                       <p style={{ fontSize: '0.875rem' }}><Mail size={12} style={{marginRight: '4px'}}/>{selectedCustomer.email}</p>
-                     </div>
-                     <div>
-                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Property</p>
-                       <p style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{marginRight: '4px'}}/>{selectedCustomer.address}</p>
-                     </div>
-                     <div>
-                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lifetime Value</p>
-                       <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>{selectedCustomer.ltv}</p>
-                     </div>
-                   </div>
-                 </div>
+               {/* Modal Header */}
+               <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
+                  <div>
+                     <h2 style={{ margin: '0 0 0.25rem 0' }}>{selectedCustomer.name}</h2>
+                     <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.875rem' }}>{selectedCustomer.id} | Account Since 2022</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                     <button className="btn btn-secondary" onClick={() => setSelectedCustomer(null)}>Close</button>
+                     <button className="btn btn-primary"><Plus size={16} /> New Quote</button>
+                  </div>
                </div>
 
-               {/* Right Column: History */}
-               <div>
-                  <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Briefcase size={18} color="var(--primary)" /> Interaction History
-                  </h4>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {selectedCustomer.history.map((record, idx) => (
-                       <div key={idx} style={{ border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                         <div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                             <span className="badge badge-primary">{record.type}</span>
-                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{record.date}</span>
-                           </div>
-                           <p style={{ fontWeight: 500, fontSize: '0.875rem' }}>{record.desc}</p>
+               {/* Modal Body */}
+               <div style={{ padding: '2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '2rem' }}>
+                 
+                 {/* Left Column (Meta & Real Estate) */}
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    
+                    {/* Identity Block */}
+                    <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                         <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                           {selectedCustomer.name.charAt(0)}
                          </div>
-                         <div style={{ fontWeight: 600 }}>
-                           {record.amount}
+                         <div>
+                            <span className={`badge badge-${selectedCustomer.status === 'Active' ? 'success' : 'secondary'}`} style={{ marginBottom: '0.25rem', display: 'inline-block' }}>{selectedCustomer.status}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                               <Phone size={14} /> {selectedCustomer.phone}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                               <Mail size={14} /> {selectedCustomer.email}
+                            </div>
                          </div>
                        </div>
-                    ))}
-                  </div>
+                    </div>
 
-                  <button className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem', border: '1px dashed var(--border)' }}>
-                     <Plus size={16} /> Link New Job to Customer
-                  </button>
+                    {/* Property Intelligence Block */}
+                    <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                       <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Home size={18} color="var(--primary)" /> Property Intelligence
+                       </h3>
+                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                          <MapPin size={16} color="var(--text-muted)" style={{ marginTop: '2px' }}/>
+                          <span style={{ fontSize: '0.875rem' }}>{selectedCustomer.address}</span>
+                       </div>
+                       
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div>
+                             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Property Type</p>
+                             <p style={{ margin: 0, fontWeight: 500, fontSize: '0.875rem' }}>{selectedCustomer.property.type}</p>
+                          </div>
+                          <div>
+                             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Year Built</p>
+                             <p style={{ margin: 0, fontWeight: 500, fontSize: '0.875rem' }}>{selectedCustomer.property.yearBuilt}</p>
+                          </div>
+                          <div>
+                             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Square Footage</p>
+                             <p style={{ margin: 0, fontWeight: 500, fontSize: '0.875rem' }}>{selectedCustomer.property.sqFt} sq ft</p>
+                          </div>
+                          <div>
+                             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Est. Zillow Value</p>
+                             <p style={{ margin: 0, fontWeight: 500, fontSize: '0.875rem', color: 'var(--success)' }}>{selectedCustomer.property.estValue}</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* Asset Vault Preview */}
+                    <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                       <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={18} color="var(--primary)" /> Asset Vault</div>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>View All</span>
+                       </h3>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-sm)' }}>
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                <FileText size={16} color="var(--danger)" /> Signed_Contract.pdf
+                             </div>
+                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-sm)' }}>
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                                <ImageIcon size={16} color="var(--success)" /> Pre_Install_Photo.jpg
+                             </div>
+                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} />
+                          </div>
+                       </div>
+                    </div>
+
+                 </div>
+
+                 {/* Right Column (Financials & History) */}
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    
+                    {/* Financials Strip */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                       <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Billed (LTV)</p>
+                          <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>{selectedCustomer.financials.billed}</h3>
+                       </div>
+                       <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outstanding</p>
+                          <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: selectedCustomer.financials.outstanding === '$0' ? 'var(--text-main)' : 'var(--danger)' }}>{selectedCustomer.financials.outstanding}</h3>
+                       </div>
+                       <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
+                          <TrendingUp size={64} color="var(--success)" style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.1 }} />
+                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Est. Margin</p>
+                          <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--success)' }}>{selectedCustomer.financials.margin}</h3>
+                       </div>
+                    </div>
+
+                    {/* Deep History Log */}
+                    <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', flex: 1 }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                         <h3 style={{ margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Briefcase size={18} color="var(--primary)" /> CRM Timeline
+                         </h3>
+                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="badge badge-secondary" style={{ cursor: 'pointer' }}>All Activity</button>
+                            <button className="badge badge-primary" style={{ cursor: 'pointer', backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>Jobs Only</button>
+                         </div>
+                       </div>
+                       
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+                         {/* Connecting Line */}
+                         <div style={{ position: 'absolute', left: '15px', top: '10px', bottom: '10px', width: '2px', backgroundColor: 'var(--border)', zIndex: 0 }}></div>
+                         
+                         {selectedCustomer.history.map((record, idx) => (
+                            <div key={idx} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                              
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: record.type === 'Job' ? 'var(--primary)' : 'var(--bg-subtle)', color: record.type === 'Job' ? 'white' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '4px solid var(--bg-surface)' }}>
+                                {record.type === 'Job' ? <Briefcase size={14} /> : record.type === 'Email' ? <Mail size={14} /> : <FileText size={14} />}
+                              </div>
+
+                              <div style={{ backgroundColor: 'var(--bg-page)', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-md)', flex: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                   <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{record.type} Activity</span>
+                                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{record.date}</span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>{record.desc}</p>
+                                {record.amount !== '--' && (
+                                   <p style={{ margin: '0.5rem 0 0 0', fontWeight: 'bold', fontSize: '0.875rem', color: 'var(--success)' }}>Value: {record.amount}</p>
+                                )}
+                              </div>
+                            </div>
+                         ))}
+                       </div>
+                    </div>
+
+                 </div>
                </div>
             </div>
+         </div>
+      )}
+
+      {/* Fallback existing simple modal for "New Customer" */}
+      {selectedCustomer?.isNew && (
+         <Modal 
+          isOpen={true} 
+          onClose={() => setSelectedCustomer(null)} 
+          title="Add New Customer"
+          footer={<><button className="btn btn-secondary" onClick={() => setSelectedCustomer(null)}>Cancel</button><button className="btn btn-primary" onClick={() => setSelectedCustomer(null)}>Save Customer</button></>}
+         >
+          <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input type="text" className="form-input" placeholder="e.g. Toby Flenderson" />
           </div>
-        )}
-      </Modal>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Phone</label>
+                <input type="tel" className="form-input" placeholder="(555) 000-0000" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" placeholder="email@example.com" />
+              </div>
+          </div>
+          <div className="form-group">
+              <label className="form-label">Primary Property Address</label>
+              <input type="text" className="form-input" placeholder="123 Street Name, City, State ZIP" />
+          </div>
+         </Modal>
+      )}
 
     </div>
   );
