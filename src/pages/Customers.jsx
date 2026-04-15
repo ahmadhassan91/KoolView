@@ -108,7 +108,7 @@ export default function Customers() {
           padding: '1rem 2rem',
           borderRadius: 'var(--radius-full)',
           boxShadow: 'var(--shadow-float)',
-          zIndex: 1000,
+          zIndex: 9999,
           animation: 'fadeInDown 0.3s ease-out'
         }}>
           {actionMessage}

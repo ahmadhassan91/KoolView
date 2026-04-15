@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MapPin, Truck, Calendar, Clock, AlertTriangle, CheckSquare, UploadCloud, Play, CloudRain, Package, Smartphone, Edit3 } from 'lucide-react';
+import { Plus, MapPin, Truck, Calendar, Clock, AlertTriangle, CheckSquare, UploadCloud, Play, CloudRain, Package, Smartphone, Edit3, Image as ImageIcon, Map as MapIcon, Loader2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function FieldOps() {
@@ -7,7 +7,8 @@ export default function FieldOps() {
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [actionMessage, setActionMessage] = useState('');
 
-  const crews = [
+  // Lift crews to state so we can dynamically mutate them for the demo
+  const [crews, setCrews] = useState([
     {
       id: 'crew-alpha',
       name: 'Crew Alpha (Install)',
@@ -34,7 +35,15 @@ export default function FieldOps() {
         { id: 'V-105', time: '10:00 AM - 11:30 AM', customer: 'Kelly Kapoor', address: '55 Fashion Ln', type: 'Initial Site Survey', status: 'Completed', progress: 100, manifest: ['Drone Camera', 'Tape Measure'], manifestLoaded: true }
       ]
     }
-  ];
+  ]);
+
+  const [simulatedState, setSimulatedState] = useState({
+    etaSent: false,
+    routingActive: false,
+    photoUploaded: false,
+    isUploading: false,
+    isSigned: false
+  });
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -46,14 +55,55 @@ export default function FieldOps() {
     }
   };
 
-  const handleAction = (msg) => {
+  const showToast = (msg) => {
     setActionMessage(msg);
     setTimeout(() => setActionMessage(''), 4000);
   };
 
+  const openVisitModal = (visit) => {
+    setSelectedVisit(visit);
+    // Reset simulation state when opening a new visit, unless it's already completed
+    setSimulatedState({
+      etaSent: false,
+      routingActive: false,
+      photoUploaded: visit.status === 'Completed',
+      isUploading: false,
+      isSigned: visit.status === 'Completed'
+    });
+  };
+
+  const simulatePhotoUpload = () => {
+    setSimulatedState(prev => ({ ...prev, isUploading: true }));
+    setTimeout(() => {
+      setSimulatedState(prev => ({ ...prev, isUploading: false, photoUploaded: true }));
+      showToast("Site photo successfully attached to job file.");
+    }, 1500);
+  };
+
+  const completeJob = () => {
+    if (!simulatedState.isSigned) {
+      showToast("Cannot complete! Client signature is required.");
+      return;
+    }
+
+    // Update the crew array
+    const updatedCrews = crews.map(crew => {
+      return {
+        ...crew,
+        visits: crew.visits.map(v => 
+          v.id === selectedVisit.id ? { ...v, status: 'Completed', progress: 100 } : v
+        )
+      };
+    });
+    
+    setCrews(updatedCrews);
+    setSelectedVisit(null);
+    showToast(`Visit ${selectedVisit.id} marked as Complete and synced to CRM.`);
+  };
+
   return (
     <div className="animate-fade-in relative">
-      {/* Toast */}
+      {/* Toast Notification - High Z-Index to clear Modals */}
       {actionMessage && (
         <div style={{
           position: 'fixed',
@@ -65,7 +115,7 @@ export default function FieldOps() {
           padding: '1rem 2rem',
           borderRadius: 'var(--radius-full)',
           boxShadow: 'var(--shadow-float)',
-          zIndex: 1000,
+          zIndex: 9999,
           animation: 'fadeInDown 0.3s ease-out',
           display: 'flex',
           alignItems: 'center',
@@ -83,7 +133,6 @@ export default function FieldOps() {
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           
-          {/* Weather Intelligence Widget mockup */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--bg-subtle)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
              <CloudRain size={20} color="var(--primary)" />
              <div style={{ textAlign: 'left' }}>
@@ -92,10 +141,10 @@ export default function FieldOps() {
              </div>
           </div>
 
-          <button className="btn btn-secondary" onClick={() => handleAction('Opening Calendar to select dispatch date...')}>
+          <button className="btn btn-secondary" onClick={() => showToast('Opening Dispatch Calendar...')}>
             <Calendar size={18} /> {activeDate}
           </button>
-          <button className="btn btn-primary" onClick={() => handleAction('Opening Advanced Dispatch Configuration...')}>
+          <button className="btn btn-primary" onClick={() => showToast('Routing to New Dispatch Tool...')}>
             <Truck size={18} /> Dispatch Crew
           </button>
         </div>
@@ -121,9 +170,8 @@ export default function FieldOps() {
                     key={visit.id} 
                     style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '1rem', transition: 'var(--transition)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
                     className="hover-lift"
-                    onClick={() => setSelectedVisit(visit)}
+                    onClick={() => openVisitModal(visit)}
                   >
-                    {/* Progress Bar Background */}
                     <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', backgroundColor: `var(--${crew.color})`, width: `${visit.progress}%` }}></div>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -139,7 +187,6 @@ export default function FieldOps() {
                        <span>{visit.address}</span>
                     </div>
 
-                    {/* Integrated Material Manifest Tag */}
                     <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: visit.manifestLoaded ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
                           <Package size={12} /> 
@@ -147,7 +194,6 @@ export default function FieldOps() {
                        </div>
                        <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: '4px' }}>{visit.manifest.length} Items</span>
                     </div>
-
                   </div>
                ))}
                
@@ -165,8 +211,7 @@ export default function FieldOps() {
                   cursor: 'pointer',
                   fontWeight: 500,
                   fontSize: '0.875rem'
-               }} className="hover-lift"
-                 onClick={() => handleAction(`Creating new unallocated stop for ${crew.name}`)}>
+               }} className="hover-lift" onClick={() => showToast(`Opening unallocated stop assignment for ${crew.name}`)}>
                  <Plus size={16} /> Add Stop
                </button>
             </div>
@@ -176,7 +221,7 @@ export default function FieldOps() {
 
       {/* Field Worker App Simulation Modal */}
       {selectedVisit && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card animate-fade-in" style={{ width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'var(--bg-page)', padding: 0 }}>
              
              {/* iPad Header */}
@@ -198,12 +243,25 @@ export default function FieldOps() {
                       </p>
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => handleAction('Opening GPS Turn-by-Turn Navigation...')}>
-                         <Play size={14} /> Start Route
-                      </button>
-                      <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => handleAction(`"On-the-way" SMS tracking link sent to ${selectedVisit.customer}.`)}>
-                         <Smartphone size={14} /> Send ETA Text
-                      </button>
+                      {simulatedState.routingActive ? (
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', border: '1px solid var(--primary)', borderRadius: 'var(--radius-md)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem', backgroundColor: 'var(--primary-light)' }}>
+                            <MapIcon size={14} /> Navigating (12 mins)
+                         </div>
+                      ) : (
+                         <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => setSimulatedState({...simulatedState, routingActive: true})}>
+                           <Play size={14} /> Start Route
+                         </button>
+                      )}
+                      
+                      {simulatedState.etaSent ? (
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', border: '1px solid var(--success)', borderRadius: 'var(--radius-md)', color: 'var(--success)', fontWeight: 600, fontSize: '0.875rem', backgroundColor: 'white' }}>
+                            <CheckSquare size={14} /> ETA Sent
+                         </div>
+                      ) : (
+                        <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => { setSimulatedState({...simulatedState, etaSent: true}); showToast(`Automated ETA Text sent to ${selectedVisit.customer}`); }}>
+                           <Smartphone size={14} /> Send ETA Text
+                        </button>
+                      )}
                    </div>
                 </div>
 
@@ -228,10 +286,26 @@ export default function FieldOps() {
 
                 <div className="form-group">
                     <label className="form-label">On-Site Media</label>
-                    <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'var(--transition)' }} className="hover-lift" onClick={() => handleAction('Opening iPad Camera Roll...')}>
-                       <UploadCloud size={24} style={{ marginBottom: '0.5rem' }} />
-                       <p style={{ margin: 0, fontSize: '0.875rem' }}>Tap to capture Before/After photos</p>
-                    </div>
+                    {simulatedState.photoUploaded ? (
+                        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'var(--bg-surface)' }}>
+                           <div style={{ width: '60px', height: '60px', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <ImageIcon color="var(--text-muted)" />
+                           </div>
+                           <div>
+                              <p style={{ margin: '0 0 0.25rem 0', fontWeight: 600, fontSize: '0.875rem' }}>site_install_1.jpg</p>
+                              <p style={{ margin: 0, color: 'var(--success)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><CheckSquare size={12}/> Sync Complete</p>
+                           </div>
+                        </div>
+                    ) : (
+                        <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'var(--transition)' }} className="hover-lift" onClick={simulatePhotoUpload}>
+                           {simulatedState.isUploading ? (
+                              <Loader2 size={24} className="animate-spin" style={{ marginBottom: '0.5rem', color: 'var(--primary)' }} />
+                           ) : (
+                              <UploadCloud size={24} style={{ marginBottom: '0.5rem' }} />
+                           )}
+                           <p style={{ margin: 0, fontSize: '0.875rem' }}>{simulatedState.isUploading ? 'Uploading to cloud...' : 'Tap to capture Before/After photos'}</p>
+                        </div>
+                    )}
                 </div>
                 
                 {/* Advanced Digital Signature Canvas Mockup */}
@@ -240,11 +314,11 @@ export default function FieldOps() {
                       <Edit3 size={16} color="var(--primary)" /> Client Sign-Off
                    </h4>
                    
-                   <div style={{ width: '100%', height: '120px', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      {selectedVisit.status === 'Completed' ? (
+                   <div style={{ width: '100%', height: '120px', backgroundColor: 'white', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: simulatedState.isSigned ? 'default' : 'pointer' }} onClick={() => !simulatedState.isSigned && setSimulatedState({...simulatedState, isSigned: true})}>
+                      {simulatedState.isSigned ? (
                          <img src={`data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><path d="M10 40 Q 60 10 100 50 T 190 30" fill="transparent" stroke="black" stroke-width="2"/></svg>`} alt="Signature" style={{ opacity: 0.8 }} />
                       ) : (
-                         <span style={{ color: 'var(--text-light)', fontSize: '0.875rem', fontStyle: 'italic' }}>Sign in box above line</span>
+                         <span style={{ color: 'var(--text-light)', fontSize: '0.875rem', fontStyle: 'italic' }}>Tap here to sign</span>
                       )}
                       <div style={{ position: 'absolute', bottom: '20px', left: '20px', right: '20px', height: '1px', backgroundColor: 'var(--border)' }}></div>
                    </div>
@@ -255,10 +329,10 @@ export default function FieldOps() {
                 </div>
 
                 <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-                  <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center' }} onClick={() => handleAction('Delay warning sent to operations.')}>
+                  <button className="btn btn-secondary" style={{ flex: 1, display: 'flex', justifyContent: 'center' }} onClick={() => showToast('Delay warning sent to operations.')}>
                     <AlertTriangle size={16} /> Report Delay
                   </button>
-                  <button className="btn btn-primary" style={{ flex: 2, display: 'flex', justifyContent: 'center' }} onClick={() => { handleAction(`Job completion and signature synchronized to cloud.`); setSelectedVisit(null); }}>
+                  <button className="btn btn-primary" style={{ flex: 2, display: 'flex', justifyContent: 'center' }} onClick={completeJob}>
                     <CheckSquare size={16} /> Complete & Sync
                   </button>
                 </div>
