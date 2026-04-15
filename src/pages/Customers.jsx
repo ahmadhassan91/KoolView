@@ -5,6 +5,12 @@ import Modal from '../components/Modal';
 export default function Customers() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [actionMessage, setActionMessage] = useState('');
+
+  const showToast = (msg) => {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(''), 3000);
+  };
 
   const customers = [
     { 
@@ -90,6 +96,25 @@ export default function Customers() {
 
   return (
     <div className="animate-fade-in relative">
+      {/* Toast Notification */}
+      {actionMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '50%',
+          transform: 'translateX(50%)',
+          backgroundColor: 'var(--text-main)',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: 'var(--radius-full)',
+          boxShadow: 'var(--shadow-float)',
+          zIndex: 1000,
+          animation: 'fadeInDown 0.3s ease-out'
+        }}>
+          {actionMessage}
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Customers CRM</h1>
@@ -147,7 +172,7 @@ export default function Customers() {
               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input type="text" placeholder="Search customers..." style={{ padding: '0.5rem 1rem 0.5rem 2rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
             </div>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem' }}>
+            <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={() => showToast('Advanced Filtering coming soon.')}>
               <Filter size={16} /> Filter
             </button>
           </div>
@@ -225,7 +250,7 @@ export default function Customers() {
                   </div>
                   <div style={{ display: 'flex', gap: '1rem' }}>
                      <button className="btn btn-secondary" onClick={() => setSelectedCustomer(null)}>Close</button>
-                     <button className="btn btn-primary"><Plus size={16} /> New Quote</button>
+                     <button className="btn btn-primary" onClick={() => showToast(`Generating new customizable quote for ${selectedCustomer.name}...`)}><Plus size={16} /> New Quote</button>
                   </div>
                </div>
 
@@ -287,20 +312,20 @@ export default function Customers() {
                     <div style={{ backgroundColor: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
                        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={18} color="var(--primary)" /> Asset Vault</div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }}>View All</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--primary)', cursor: 'pointer' }} onClick={() => showToast('Opening comprehensive vault history...')}>View All</span>
                        </h3>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-sm)' }}>
                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
                                 <FileText size={16} color="var(--danger)" /> Signed_Contract.pdf
                              </div>
-                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} />
+                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} onClick={() => showToast('Downloading Signed_Contract.pdf...')} />
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-sm)' }}>
                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
                                 <ImageIcon size={16} color="var(--success)" /> Pre_Install_Photo.jpg
                              </div>
-                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} />
+                             <Download size={14} color="var(--text-muted)" style={{ cursor: 'pointer' }} onClick={() => showToast('Downloading Pre_Install_Photo.jpg...')} />
                           </div>
                        </div>
                     </div>

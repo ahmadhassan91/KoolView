@@ -92,10 +92,10 @@ export default function FieldOps() {
              </div>
           </div>
 
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => handleAction('Opening Calendar to select dispatch date...')}>
             <Calendar size={18} /> {activeDate}
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={() => handleAction('Opening Advanced Dispatch Configuration...')}>
             <Truck size={18} /> Dispatch Crew
           </button>
         </div>
@@ -165,7 +165,8 @@ export default function FieldOps() {
                   cursor: 'pointer',
                   fontWeight: 500,
                   fontSize: '0.875rem'
-               }} className="hover-lift">
+               }} className="hover-lift"
+                 onClick={() => handleAction(`Creating new unallocated stop for ${crew.name}`)}>
                  <Plus size={16} /> Add Stop
                </button>
             </div>
