@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, UserSquare, Calendar, Briefcase, Truck, FileText, FileSpreadsheet, Settings, Bell, Search, Plus } from 'lucide-react';
+import { LayoutDashboard, Users, UserSquare, Calendar, Briefcase, Truck, FileText, BookOpen, Settings, Bell, Search, Plus } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
@@ -10,13 +10,13 @@ import FieldOps from './pages/FieldOps';
 import Documents from './pages/Documents';
 import Billing from './pages/Billing';
 
-const NavItem = ({ to, icon: Icon, label }) => {
+const NavItem = ({ to, icon, label }) => {
   const location = useLocation();
   const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
   
   return (
     <Link to={to} className={`nav-item ${isActive ? 'active' : ''}`}>
-      <Icon className="nav-icon" />
+      {React.createElement(icon, { className: 'nav-icon' })}
       <span>{label}</span>
     </Link>
   );
@@ -39,7 +39,7 @@ function Layout({ children }) {
           <NavItem to="/jobs" icon={Briefcase} label="Internal Jobs" />
           <NavItem to="/field-ops" icon={Truck} label="Field Operations" />
           <NavItem to="/documents" icon={FileText} label="Documents" />
-          <NavItem to="/billing" icon={FileSpreadsheet} label="Billing" />
+          <NavItem to="/billing" icon={BookOpen} label="Accounting" />
         </nav>
         
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
