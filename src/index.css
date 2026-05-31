@@ -597,7 +597,7 @@ button {
   background-color: var(--bg-surface);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 500px;
+  max-width: min(920px, calc(100vw - 2rem));
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-float);
