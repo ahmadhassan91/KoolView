@@ -765,7 +765,8 @@ button {
 
   .top-header > div:first-child {
     order: 10;
-    flex-basis: 100%;
+    flex: 0 0 100% !important;
+    min-width: 0;
   }
 
   .top-header > div:first-child > div {
