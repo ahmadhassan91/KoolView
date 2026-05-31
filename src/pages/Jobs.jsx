@@ -1,311 +1,484 @@
-import React, { useState } from 'react';
-import { Plus, Filter, Search, MoreVertical, FileText, CircleDollarSign, Link as LinkIcon } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import {
+  Briefcase,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock,
+  FileText,
+  FolderOpen,
+  Plus,
+  Search,
+} from 'lucide-react';
 import Modal from '../components/Modal';
+import StatusBadge from '../components/StatusBadge';
+import KpiCard from '../components/KpiCard';
+import {
+  calculateJobPnl,
+  calculatePayrollEntryCost,
+  currency,
+  documentBalance,
+  documentStatus,
+  estimateTotal,
+  formatDate,
+  sumPayments,
+  toNumber,
+} from '../utils/koolViewCalculations';
+import { useKoolViewData } from '../state/useKoolViewData';
+
+const stageTabs = [
+  { id: 'active', label: 'Active Jobs' },
+  { id: 'DP', label: 'Deposit Billed' },
+  { id: 'FOC', label: 'Factory Order' },
+  { id: 'RD', label: 'Room Delivery' },
+  { id: 'completed', label: 'Completed' },
+];
+
+const stageLabels = {
+  DP: 'Deposit Billed',
+  FOC: 'Factory Order Confirmation',
+  RD: 'Room Delivery',
+  C: 'Completed',
+};
+
+const field = (label, value) => (
+  <div className="detail-item">
+    <span>{label}</span>
+    <strong>{value || 'Not set'}</strong>
+  </div>
+);
 
 export default function Jobs() {
+  const {
+    jobs,
+    estimates,
+    invoices,
+    bills,
+    payrollEntries,
+    commissions,
+    documents,
+    addJob,
+  } = useKoolViewData();
+
   const [activeTab, setActiveTab] = useState('active');
   const [selectedJob, setSelectedJob] = useState(null);
+  const [detailTab, setDetailTab] = useState('overview');
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [actionMessage, setActionMessage] = useState('');
+  const [newJob, setNewJob] = useState({
+    customerName: '',
+    phone: '',
+    projectType: 'Transition Living Space',
+    contractDate: new Date().toISOString().slice(0, 10),
+    address: '',
+    city: '',
+    contractAmount: '',
+    salesperson: 'C',
+  });
 
-  const [jobs, setJobs] = useState([
-    { id: '4492', customer: 'Pam Beesly', entityType: 'Customer', address: '492 Artist Way', type: 'Sunroom', status: 'Awaiting Permit', nextAction: 'City Approval', progress: 25 },
-    { id: '4493', customer: 'Dwight Schrute', entityType: 'Customer', address: '101 Farm Rd', type: 'Window Replacement', status: 'Factory Order', nextAction: 'Delivery Confirmation', progress: 60 },
-    { id: '4494', customer: 'Jim Halpert', entityType: 'Customer', address: '87 Paper St', type: 'Patio Enclosure', status: 'Installation', nextAction: 'Final Inspection', progress: 85 },
-    { id: '4495', customer: 'Stanley Hudson', entityType: 'Customer', address: '88 Pretzel St', type: 'Awning', status: 'Deposit Billed', nextAction: 'Measure & Specs', progress: 10 },
-    { id: '4496', customer: 'Kelly Kapoor', entityType: 'Lead', address: '55 Fashion Ln', type: 'Initial Site Survey', status: 'Inbound Review', nextAction: 'Dispatch Surveyor', progress: 0 },
-  ]);
+  const activeJobs = jobs.filter((job) => job.status !== 'Completed');
+  const productionTotal = activeJobs.reduce((total, job) => total + toNumber(job.contractAmount), 0);
+  const changeOrderTotal = jobs.reduce((total, job) => total + toNumber(job.changeOrders), 0);
 
-  const getStatusBadge = (status) => {
-    const map = {
-      'Deposit Billed': 'primary',
-      'Awaiting Permit': 'warning',
-      'Factory Order': 'primary',
-      'Installation': 'warning',
-      'Inbound Review': 'secondary',
-      'Completed': 'success'
-    };
-    return `badge badge-${map[status] || 'secondary'}`;
-  };
+  const visibleJobs = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    return jobs.filter((job) => {
+      if (activeTab === 'active' && job.status === 'Completed') return false;
+      if (activeTab === 'completed' && job.status !== 'Completed') return false;
+      if (!['active', 'completed'].includes(activeTab) && job.productionStage !== activeTab) return false;
+      if (!normalized) return true;
+      return [job.id, job.customerName, job.phone, job.projectType, job.address, job.city, job.productionStage]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalized));
+    });
+  }, [activeTab, jobs, searchTerm]);
 
-  const showToast = (msg) => {
-    setActionMessage(msg);
+  const showToast = (message) => {
+    setActionMessage(message);
     setTimeout(() => setActionMessage(''), 3000);
   };
 
-  const handleAction = (e, actionType, job) => {
-    e.stopPropagation();
-    if (actionType === 'doc') {
-      showToast(`Reviewing attached documents for Job #${job.id}`);
-    } else if (actionType === 'invoice') {
-      if (job.entityType === 'Lead') {
-        showToast(`Cannot generate invoice. ${job.customer} is still a pre-sale Lead.`);
-      } else {
-        showToast(`Generating auto-filled invoice for Job #${job.id}`);
-      }
-    } else if (actionType === 'more') {
-      showToast(`Opening advanced options for Job #${job.id}`);
-    }
+  const resetNewJob = () => {
+    setNewJob({
+      customerName: '',
+      phone: '',
+      projectType: 'Transition Living Space',
+      contractDate: new Date().toISOString().slice(0, 10),
+      address: '',
+      city: '',
+      contractAmount: '',
+      salesperson: 'C',
+    });
   };
 
-  const JobTimeline = ({ job }) => {
-    if (job.entityType === 'Lead') {
-      return (
-         <div className="timeline">
-           <div className="timeline-item active">
-             <div className="timeline-dot"></div>
-             <div>
-               <h5 style={{ margin: 0, fontWeight: 700 }}>Pre-Sale Appraisal</h5>
-               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Status: {job.status}</p>
-             </div>
-           </div>
-         </div>
-      );
+  const submitNewJob = () => {
+    if (!newJob.customerName || !newJob.projectType || !newJob.address) {
+      showToast('Customer, project, and address are required.');
+      return;
     }
 
-    const milestones = [
-      { key: 'Deposit Billed', label: '1. Deposit Billed' },
-      { key: 'Awaiting Permit', label: '2. Permit Procurement' },
-      { key: 'Factory Order', label: '3. Factory Order Placed' },
-      { key: 'Installation', label: '4. Installation Phase' },
-      { key: 'Completed', label: '5. Post-Install & Final Bill' }
+    const created = addJob({
+      customerId: 'CUST-POC',
+      customerName: newJob.customerName,
+      phone: newJob.phone,
+      projectType: newJob.projectType,
+      contractDate: newJob.contractDate,
+      address: newJob.address,
+      city: newJob.city,
+      contractAmount: toNumber(newJob.contractAmount),
+      salesperson: newJob.salesperson,
+      busyBusyProject: newJob.customerName,
+      documentFolder: `Active/${newJob.projectType}/${newJob.customerName}`,
+    });
+
+    setIsNewOpen(false);
+    resetNewJob();
+    showToast(`${created.id} created and ready for estimate.`);
+  };
+
+  const openJob = (job, tab = 'overview') => {
+    setSelectedJob(job);
+    setDetailTab(tab);
+  };
+
+  const renderJobDetail = () => {
+    if (!selectedJob) return null;
+    const jobEstimates = estimates.filter((estimate) => estimate.jobId === selectedJob.id);
+    const jobInvoices = invoices.filter((invoice) => invoice.jobId === selectedJob.id);
+    const jobBills = bills.filter((bill) => bill.jobId === selectedJob.id);
+    const jobPayroll = payrollEntries.filter((entry) => entry.jobId === selectedJob.id);
+    const jobDocuments = documents.filter((document) => document.jobId === selectedJob.id);
+    const jobCommission = commissions.find((commission) => commission.jobId === selectedJob.id);
+    const pnl = calculateJobPnl({ job: selectedJob, invoices, bills, payrollEntries });
+
+    const checklist = [
+      { label: 'Accounting estimate created', complete: jobEstimates.length > 0 },
+      { label: 'Production list updated', complete: true },
+      { label: 'Commission tracking created', complete: Boolean(jobCommission) },
+      { label: 'Document folder created', complete: jobDocuments.length > 0 },
+      { label: 'BusyBusy project mapped', complete: Boolean(selectedJob.busyBusyProject) },
     ];
 
     return (
-      <div className="timeline">
-        {milestones.map((m, idx) => {
-          const isCurrent = m.key === job.status;
-          const isCompleted = milestones.findIndex(ms => ms.key === job.status) > idx;
+      <>
+        <div className="tabs" style={{ paddingLeft: 0, paddingRight: 0 }}>
+          {['overview', 'checklist', 'accounting', 'documents', 'costs', 'pnl'].map((tab) => (
+            <button key={tab} className={`tab-button ${detailTab === tab ? 'active' : ''}`} onClick={() => setDetailTab(tab)}>
+              {tab === 'pnl' ? 'P&L' : tab === 'costs' ? 'Payroll & Costs' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
 
-          let itemClass = 'timeline-item';
-          if (isCurrent) itemClass += ' active';
-          if (isCompleted) itemClass += ' completed';
+        <div style={{ paddingTop: '1rem' }}>
+          {detailTab === 'overview' && (
+            <div className="detail-list">
+              {field('Customer', selectedJob.customerName)}
+              {field('Phone', selectedJob.phone)}
+              {field('Project Type', selectedJob.projectType)}
+              {field('Contract Date', formatDate(selectedJob.contractDate))}
+              {field('Address', selectedJob.address)}
+              {field('City', selectedJob.city)}
+              {field('Production Stage', stageLabels[selectedJob.productionStage] || selectedJob.productionStage)}
+              {field('Salesperson', selectedJob.salesperson)}
+              {field('Contract Amount', currency(selectedJob.contractAmount))}
+              {field('BusyBusy Project', selectedJob.busyBusyProject)}
+              {field('FileCenter Folder', selectedJob.documentFolder)}
+            </div>
+          )}
 
-          return (
-            <div key={m.key} className={itemClass}>
-              <div className="timeline-dot"></div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h5 style={{ margin: 0, fontWeight: isCurrent ? 700 : 500, color: (isCurrent || isCompleted) ? 'var(--text-main)' : 'var(--text-muted)' }}>{m.label}</h5>
-                {isCurrent && <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Next Action: {job.nextAction}</p>}
-                {isCompleted && <p style={{ fontSize: '0.75rem', color: 'var(--success)' }}>Completed</p>}
+          {detailTab === 'checklist' && (
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {checklist.map((item) => (
+                <div key={item.label} className="detail-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {item.complete ? <CheckCircle2 color="var(--success)" /> : <Clock color="var(--warning)" />}
+                  <div>
+                    <strong>{item.label}</strong>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{item.complete ? 'Complete' : 'Needs attention'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {detailTab === 'accounting' && (
+            <div style={{ display: 'grid', gap: '1.25rem' }}>
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Estimate</th><th>Total</th><th>Status</th><th>Milestones</th></tr>
+                  </thead>
+                  <tbody>
+                    {jobEstimates.map((estimate) => (
+                      <tr key={estimate.id}>
+                        <td>{estimate.id}</td>
+                        <td>{currency(estimateTotal(estimate))}</td>
+                        <td><StatusBadge status={estimate.status} /></td>
+                        <td>{estimate.items?.length || 0} billing lines</td>
+                      </tr>
+                    ))}
+                    {jobEstimates.length === 0 && <tr><td colSpan="4">No estimate connected yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Invoice</th><th>Milestone</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    {jobInvoices.map((invoice) => (
+                      <tr key={invoice.id}>
+                        <td>{invoice.invoiceNumber || invoice.id}</td>
+                        <td>{invoice.milestone}</td>
+                        <td>{currency(invoice.amount)}</td>
+                        <td>{currency(sumPayments(invoice.payments))}</td>
+                        <td>{currency(documentBalance(invoice.amount, invoice.payments))}</td>
+                        <td><StatusBadge status={documentStatus({ amount: invoice.amount, payments: invoice.payments, dueDate: invoice.dueDate })} /></td>
+                      </tr>
+                    ))}
+                    {jobInvoices.length === 0 && <tr><td colSpan="6">No invoice connected yet.</td></tr>}
+                  </tbody>
+                </table>
               </div>
             </div>
-          );
-        })}
-      </div>
+          )}
+
+          {detailTab === 'documents' && (
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr><th>Name</th><th>Category</th><th>Folder Path</th><th>Added By</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                  {jobDocuments.map((document) => (
+                    <tr key={document.id}>
+                      <td>{document.name}</td>
+                      <td>{document.category}</td>
+                      <td title={document.folderPath}>{document.folderPath}</td>
+                      <td>{document.addedBy}</td>
+                      <td>{formatDate(document.addedDate)}</td>
+                    </tr>
+                  ))}
+                  {jobDocuments.length === 0 && <tr><td colSpan="5">No documents connected yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {detailTab === 'costs' && (
+            <div style={{ display: 'grid', gap: '1.25rem' }}>
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Employee</th><th>Date</th><th>Hours</th><th>Project</th><th>Labor Cost</th></tr>
+                  </thead>
+                  <tbody>
+                    {jobPayroll.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{entry.employeeName}</td>
+                        <td>{formatDate(entry.date)}</td>
+                        <td>{entry.hours}</td>
+                        <td>{entry.project}</td>
+                        <td>{currency(calculatePayrollEntryCost(entry))}</td>
+                      </tr>
+                    ))}
+                    {jobPayroll.length === 0 && <tr><td colSpan="5">No BusyBusy hours connected yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Vendor</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid</th></tr>
+                  </thead>
+                  <tbody>
+                    {jobBills.map((bill) => (
+                      <tr key={bill.id}>
+                        <td>{bill.vendor}</td>
+                        <td>{bill.category}</td>
+                        <td>{bill.description}</td>
+                        <td>{currency(bill.amount)}</td>
+                        <td>{currency(sumPayments(bill.payments))}</td>
+                      </tr>
+                    ))}
+                    {jobBills.length === 0 && <tr><td colSpan="5">No bills connected yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {detailTab === 'pnl' && (
+            <div className="responsive-grid">
+              <div className="span-4"><KpiCard title="Invoiced Revenue" value={currency(pnl.invoicedRevenue)} subtext="From job invoices" icon={CircleDollarSign} /></div>
+              <div className="span-4"><KpiCard title="Collected Revenue" value={currency(pnl.collectedRevenue)} subtext="Posted customer payments" icon={CheckCircle2} type="success" /></div>
+              <div className="span-4"><KpiCard title="Bill Costs" value={currency(pnl.billCosts)} subtext="Vendor and material bills" icon={FileText} type="warning" /></div>
+              <div className="span-4"><KpiCard title="Labor Cost" value={currency(pnl.laborCost)} subtext="BusyBusy hours x rate" icon={Clock} type="warning" /></div>
+              <div className="span-4"><KpiCard title="Gross Profit" value={currency(pnl.grossProfit)} subtext="Revenue minus job costs" icon={Briefcase} type={pnl.grossProfit >= 0 ? 'success' : 'danger'} /></div>
+              <div className="span-4"><KpiCard title="Margin" value={`${pnl.margin}%`} subtext="Estimated job margin" icon={CircleDollarSign} type="primary" /></div>
+            </div>
+          )}
+        </div>
+      </>
     );
   };
 
-  // Create Job specific state
-  const [newJobEntity, setNewJobEntity] = useState('Customer');
-
   return (
-    <div className="animate-fade-in relative">
-      {actionMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '50%',
-          transform: 'translateX(50%)',
-          backgroundColor: 'var(--text-main)',
-          color: 'white',
-          padding: '1rem 2rem',
-          borderRadius: 'var(--radius-full)',
-          boxShadow: 'var(--shadow-float)',
-          zIndex: 1000,
-          animation: 'fadeInDown 0.3s ease-out'
-        }}>
-          {actionMessage}
-        </div>
-      )}
+    <div className="animate-fade-in">
+      {actionMessage && <div className="toast">{actionMessage}</div>}
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Internal Jobs</h1>
-          <p className="page-subtitle">Track project progress mapped to your leads and customers.</p>
+          <h1 className="page-title">Jobs & Contracts</h1>
+          <p className="page-subtitle">One job record feeds production, accounting, documents, commission, payroll, and P&L.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setSelectedJob({ isNew: true })}>
+        <button className="btn btn-primary" onClick={() => setIsNewOpen(true)}>
           <Plus size={18} /> New Job
         </button>
       </div>
 
-      <div className="card" style={{ padding: '0' }}>
-        <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              style={{ fontWeight: 500, color: activeTab === 'active' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'active' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem' }}
-              onClick={() => setActiveTab('active')}
-            >
-              Active Jobs ({jobs.length})
-            </button>
-            <button 
-              style={{ fontWeight: 500, color: activeTab === 'completed' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'completed' ? '2px solid var(--primary)' : 'none', paddingBottom: '0.5rem' }}
-              onClick={() => setActiveTab('completed')}
-            >
-              Completed
-            </button>
+      <div className="responsive-grid" style={{ marginBottom: '1.5rem' }}>
+        <div className="span-3"><KpiCard title="Active Jobs" value={activeJobs.length} subtext="Not completed" icon={Briefcase} /></div>
+        <div className="span-3"><KpiCard title="Production Value" value={currency(productionTotal)} subtext="Open contracts" icon={CircleDollarSign} type="success" /></div>
+        <div className="span-3"><KpiCard title="Change Orders" value={currency(changeOrderTotal)} subtext="Approved changes" icon={FileText} type="warning" /></div>
+        <div className="span-3"><KpiCard title="Document Folders" value={documents.length} subtext="Current and past files" icon={FolderOpen} type="primary" /></div>
+      </div>
+
+      <div className="card">
+        <div className="section-toolbar">
+          <div>
+            <h3>Production List</h3>
+            <p>Modeled after Dorothy's active customer production spreadsheet.</p>
           </div>
-          
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="section-actions">
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" placeholder="Search jobs..." style={{ padding: '0.5rem 1rem 0.5rem 2rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
+              <input className="form-input" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search jobs..." style={{ paddingLeft: '2rem', width: '220px' }} />
             </div>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem' }}>
-              <Filter size={16} /> Filter
-            </button>
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="tabs">
+          {stageTabs.map((tab) => (
+            <button key={tab.id} className={`tab-button ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
-              <tr style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Job ID</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Entity Link</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Project Type</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Current Status</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Progress</th>
-                <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Actions</th>
+              <tr>
+                <th>Track #</th>
+                <th>Customer</th>
+                <th>Project</th>
+                <th>Contract Date</th>
+                <th>Address</th>
+                <th>Billed</th>
+                <th>Price</th>
+                <th>Change Orders</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job) => (
-                <tr 
-                  key={job.id} 
-                  style={{ borderBottom: '1px solid var(--border)', transition: 'var(--transition)', cursor: 'pointer' }} 
-                  className="hover-lift"
-                  onClick={() => setSelectedJob(job)}
-                >
-                  <td style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>#{job.id}</td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <LinkIcon size={12} color="var(--primary)" /> {job.customer}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      <span className={`badge badge-${job.entityType === 'Customer' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
-                        {job.entityType}
-                      </span>
-                      <span style={{ marginLeft: '0.5rem' }}>{job.address}</span>
-                    </div>
+              {visibleJobs.map((job) => (
+                <tr key={job.id} className="hover-lift" style={{ cursor: 'pointer' }} onClick={() => openJob(job)}>
+                  <td style={{ fontWeight: 700 }}>{job.id}</td>
+                  <td>
+                    <strong>{job.customerName}</strong>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{job.phone}</div>
                   </td>
-                  <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.type}</td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <span className={getStatusBadge(job.status)}>{job.status}</span>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Next: {job.nextAction}</div>
+                  <td>{job.projectType}</td>
+                  <td>{formatDate(job.contractDate)}</td>
+                  <td>{job.address}, {job.city}</td>
+                  <td><StatusBadge status={job.productionStage} /></td>
+                  <td style={{ fontWeight: 700 }}>{currency(job.contractAmount)}</td>
+                  <td>
+                    {currency(job.changeOrders)}
+                    {job.changeOrderDate && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{formatDate(job.changeOrderDate)}</div>}
                   </td>
-                  <td style={{ padding: '1rem 1.5rem', width: '200px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                        <div style={{ width: `${job.progress}%`, height: '100%', backgroundColor: 'var(--success)', borderRadius: 'var(--radius-full)' }}></div>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>{job.progress}%</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem' }} onClick={(e) => e.stopPropagation()}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={(e) => handleAction(e, 'doc', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="View Documents">
-                        <FileText size={18} />
+                  <td onClick={(event) => event.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <button className="btn btn-secondary" style={{ padding: '0.45rem 0.65rem' }} onClick={() => openJob(job, 'accounting')}>
+                        <CircleDollarSign size={14} /> Accounting
                       </button>
-                      <button onClick={(e) => handleAction(e, 'invoice', job)} style={{ padding: '0.25rem', color: job.entityType === 'Lead' ? 'var(--text-muted)' : 'var(--primary)', opacity: job.entityType === 'Lead' ? 0.3 : 1, transition: 'color 0.2s', cursor: 'pointer' }} title="Generate Invoice">
-                        <CircleDollarSign size={18} />
-                      </button>
-                      <button onClick={(e) => handleAction(e, 'more', job)} style={{ padding: '0.25rem', color: 'var(--text-muted)', transition: 'color 0.2s', cursor: 'pointer' }} title="More Options">
-                        <MoreVertical size={18} />
+                      <button className="btn btn-secondary" style={{ padding: '0.45rem 0.65rem' }} onClick={() => openJob(job, 'documents')}>
+                        <FileText size={14} /> Docs
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {visibleJobs.length === 0 && <tr><td colSpan="9" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No jobs match this view.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Modal 
-        isOpen={!!selectedJob} 
-        onClose={() => setSelectedJob(null)} 
-        title={selectedJob?.isNew ? 'Create New Job' : `Job Details: #${selectedJob?.id}`}
-        footer={
-          selectedJob?.isNew ? 
-            <><button className="btn btn-secondary" onClick={() => setSelectedJob(null)}>Cancel</button><button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Allocate Job ID</button></> 
-            : <button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Save Status</button>
-        }
+      <Modal
+        isOpen={!!selectedJob}
+        onClose={() => setSelectedJob(null)}
+        title={selectedJob ? `${selectedJob.id} - ${selectedJob.customerName}` : 'Job Details'}
+        footer={<button className="btn btn-primary" onClick={() => setSelectedJob(null)}>Close</button>}
       >
-        {selectedJob?.isNew ? (
-          <div>
-             <div className="form-group" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                   <input type="radio" name="entityType" checked={newJobEntity === 'Customer'} onChange={() => setNewJobEntity('Customer')} /> 
-                   Link to Customer (Production Job)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                   <input type="radio" name="entityType" checked={newJobEntity === 'Lead'} onChange={() => setNewJobEntity('Lead')} /> 
-                   Link to Lead (Pre-Sale Appraisal)
-                </label>
-             </div>
-
-             <div className="form-group">
-                <label className="form-label">
-                   {newJobEntity === 'Customer' ? 'Select Existing Customer Database Record' : 'Select Pipeline Lead'}
-                </label>
-                <select className="form-input">
-                  {newJobEntity === 'Customer' ? (
-                     <>
-                     <option>Pam Beesly</option>
-                     <option>Jim Halpert</option>
-                     <option>Michael Scott</option>
-                     </>
-                  ) : (
-                     <>
-                     <option>Toby Flenderson</option>
-                     <option>Kelly Kapoor</option>
-                     <option>Creed Bratton</option>
-                     </>
-                  )}
-                </select>
-             </div>
-
-             <div className="form-group">
-                <label className="form-label">Project Type</label>
-                <select className="form-input">
-                  <option>Sunroom Install</option>
-                  <option>Window Replacement</option>
-                  <option>Patio Enclosure</option>
-                  <option>Initial Site Appraisal</option>
-                </select>
-             </div>
-
-             {newJobEntity === 'Customer' && (
-                <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-                   <p style={{ margin: 0, fontSize: '0.875rem', display: 'flex', gap: '0.5rem' }}><LinkIcon size={14}/> Job will be automatically mapped to the selected Customer's permanent file.</p>
-                </div>
-             )}
-          </div>
-        ) : (
-          <div>
-            <div style={{ backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Linked {selectedJob?.entityType}</p>
-                <p style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <LinkIcon size={12} color="var(--primary)"/> {selectedJob?.customer}
-                </p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Project Scope</p>
-                <p style={{ fontWeight: 600 }}>{selectedJob?.type}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Current Status</p>
-                <p className={getStatusBadge(selectedJob?.status)} style={{ margin: '0.25rem 0 0 0' }}>{selectedJob?.status}</p>
-              </div>
-            </div>
-
-            <h4 style={{ marginBottom: '1rem', fontSize: '1rem' }}>{selectedJob?.entityType === 'Customer' ? 'Production Milestones' : 'Lead Tracking Workflow'}</h4>
-            {selectedJob && <JobTimeline job={selectedJob} />}
-          </div>
-        )}
+        {renderJobDetail()}
       </Modal>
 
+      <Modal
+        isOpen={isNewOpen}
+        onClose={() => setIsNewOpen(false)}
+        title="Create New Job / Contract"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsNewOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={submitNewJob}>Create Job</button>
+          </>
+        }
+      >
+        <div className="field-grid">
+          <div className="form-group">
+            <label className="form-label">Customer Name</label>
+            <input className="form-input" value={newJob.customerName} onChange={(event) => setNewJob({ ...newJob, customerName: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone</label>
+            <input className="form-input" value={newJob.phone} onChange={(event) => setNewJob({ ...newJob, phone: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Project Type</label>
+            <select className="form-input" value={newJob.projectType} onChange={(event) => setNewJob({ ...newJob, projectType: event.target.value })}>
+              <option>Transition Living Space</option>
+              <option>Aere vinyl Glazed w/vertical windows</option>
+              <option>Click - Click Windows</option>
+              <option>Awning</option>
+              <option>Deck</option>
+              <option>Patio Cover</option>
+              <option>Service</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Contract Date</label>
+            <input className="form-input" type="date" value={newJob.contractDate} onChange={(event) => setNewJob({ ...newJob, contractDate: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Address</label>
+            <input className="form-input" value={newJob.address} onChange={(event) => setNewJob({ ...newJob, address: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">City</label>
+            <input className="form-input" value={newJob.city} onChange={(event) => setNewJob({ ...newJob, city: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Contract Amount</label>
+            <input className="form-input" value={newJob.contractAmount} onChange={(event) => setNewJob({ ...newJob, contractAmount: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Salesperson</label>
+            <input className="form-input" value={newJob.salesperson} onChange={(event) => setNewJob({ ...newJob, salesperson: event.target.value })} />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

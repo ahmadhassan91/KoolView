@@ -1,106 +1,98 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Phone, Calendar as CalendarIcon, UserPlus, Clock, Send, CheckCircle2 } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, MessageSquare, Phone, Send, UserPlus } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useKoolViewData } from '../state/useKoolViewData';
+
+const kanbanColumns = [
+  { title: 'New', color: 'primary' },
+  { title: 'Contacted', color: 'warning' },
+  { title: 'Appt. Set', color: 'success' },
+  { title: 'Quoted', color: 'primary' },
+  { title: 'Converted', color: 'success' },
+];
 
 export default function Leads() {
+  const { leads, setLeads, addLead, convertLeadToJob } = useKoolViewData();
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [actionMessage, setActionMessage] = useState('');
-
-  const [leads, setLeads] = useState([
-    { id: 'L-101', name: 'Angela Martin', source: 'HomeAdvisor', phone: '(555) 019-2831', status: 'New', time: '2h ago', notes: 'Looking for a 3-season sunroom.' },
-    { id: 'L-104', name: 'Toby Flenderson', source: 'Website', phone: '(555) 777-1234', status: 'New', time: '5h ago', notes: 'Needs front door replacement.' },
-    { id: 'L-105', name: 'Phyllis Vance', source: 'Call-in', phone: '(555) 123-9876', status: 'New', time: '1d ago', notes: 'Window replacement for kitchen.' },
-    { id: 'L-102', name: 'Creed Bratton', source: 'Website', phone: '(555) 998-1123', status: 'Contacted', time: '1d ago', notes: 'Needs 5 windows replaced.' },
-    { id: 'L-106', name: 'Ryan Howard', source: 'Angie', phone: '(555) 888-5555', status: 'Contacted', time: '2d ago', notes: 'Patio cover request.' },
-    { id: 'L-103', name: 'Kelly Kapoor', source: 'Angie', phone: '(555) 777-6655', status: 'Appt. Set', time: '2d ago', notes: 'Wants patio enclosure quote.' },
-    { id: 'L-107', name: 'Meredith Palmer', source: 'Referral', phone: '(555) 333-2222', status: 'Appt. Set', time: '3d ago', notes: 'Gutter replacement.' },
-    { id: 'L-108', name: 'Kevin Malone', source: 'HomeAdvisor', phone: '(555) 444-1111', status: 'Quoted', time: '4d ago', notes: 'Sunroom extension. Quoted $15k.' },
-  ]);
-
-  const kanbanColumns = [
-    { title: 'New', color: 'primary' },
-    { title: 'Contacted', color: 'warning' },
-    { title: 'Appt. Set', color: 'success' },
-    { title: 'Quoted', color: 'primary' },
-  ];
-
-  const handleDragStart = (e, leadId) => {
-    e.dataTransfer.setData('leadId', leadId);
-    e.currentTarget.style.opacity = '0.5';
-  };
-
-  const handleDragEnd = (e) => {
-    e.currentTarget.style.opacity = '1';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e, newStatus) => {
-    e.preventDefault();
-    const leadId = e.dataTransfer.getData('leadId');
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, status: newStatus } : lead
-    ));
-  };
-
-  const [selectedSmsLead, setSelectedSmsLead] = useState(leads.find(l => l.name === 'Kelly Kapoor'));
+  const [selectedSmsLead, setSelectedSmsLead] = useState(leads[0]);
   const [smsText, setSmsText] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [newLead, setNewLead] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    source: 'Website',
+    address: '',
+    city: '',
+    projectType: 'Transition Living Space',
+    notes: '',
+  });
   const [chatHistory, setChatHistory] = useState([
-    { sender: 'us', text: 'Hi Kelly, this is Kool View confirming your site visit tomorrow at 10:00 AM. Reply C to confirm or R to reschedule.', time: '10:00 AM' },
-    { sender: 'them', text: 'C', time: '10:15 AM' }
+    { sender: 'us', text: 'Hi, this is Kool View confirming your site visit. Reply C to confirm or R to reschedule.', time: '10:00 AM' },
+    { sender: 'them', text: 'C', time: '10:15 AM' },
   ]);
+
+  const showToast = (message) => {
+    setActionMessage(message);
+    setTimeout(() => setActionMessage(''), 3500);
+  };
+
+  const handleDragStart = (event, leadId) => {
+    event.dataTransfer.setData('leadId', leadId);
+    event.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (event) => {
+    event.currentTarget.style.opacity = '1';
+  };
+
+  const handleDrop = (event, newStatus) => {
+    event.preventDefault();
+    const leadId = event.dataTransfer.getData('leadId');
+    setLeads((current) => current.map((lead) => (lead.id === leadId ? { ...lead, status: newStatus } : lead)));
+  };
 
   const openSmsForLead = (lead) => {
     setSelectedSmsLead(lead);
     setChatHistory([
-      { sender: 'us', text: `Hi ${lead.name.split(' ')[0]}, thanks for reaching out to Kool View! How can we help you today?`, time: 'Just now' }
+      { sender: 'us', text: `Hi ${lead.name.split(' ')[0]}, thanks for reaching out to Kool View. We can help with your ${lead.projectType || 'project'} request.`, time: 'Just now' },
     ]);
   };
 
   const sendSms = () => {
     if (!smsText.trim()) return;
-    setChatHistory([...chatHistory, { sender: 'us', text: smsText, time: 'Now' }]);
+    setChatHistory((current) => [...current, { sender: 'us', text: smsText, time: 'Now' }]);
     setSmsText('');
     setTimeout(() => {
-      setChatHistory(prev => [...prev, { sender: 'them', text: "Sounds great, looking forward to it!", time: 'Now' }]);
-    }, 2000);
+      setChatHistory((current) => [...current, { sender: 'them', text: 'Sounds good, thank you.', time: 'Now' }]);
+    }, 800);
   };
 
-  const handleConvertToCustomer = () => {
-    if (!selectedLead) return;
-    
-    // Simulate API call and state update
-    setLeads(leads.filter(l => l.id !== selectedLead.id));
-    setActionMessage(`${selectedLead.name} was successfully converted to a Customer!`);
-    setSelectedLead(null);
-    
-    setTimeout(() => setActionMessage(''), 4000);
+  const createLead = () => {
+    if (!newLead.name || !newLead.phone) {
+      showToast('Name and phone are required.');
+      return;
+    }
+    const created = addLead({ ...newLead, status: 'New', time: 'Just now' });
+    setSelectedSmsLead(created);
+    setIsAddLeadOpen(false);
+    setNewLead({ name: '', phone: '', email: '', source: 'Website', address: '', city: '', projectType: 'Transition Living Space', notes: '' });
+    showToast(`${created.name} added to the lead pipeline.`);
+  };
+
+  const createJobFromLead = (lead) => {
+    const job = convertLeadToJob(lead.id);
+    if (job) {
+      setSelectedLead(null);
+      showToast(`${lead.name} converted into ${job.id} and ready for estimate.`);
+    }
   };
 
   return (
-    <div className="animate-fade-in relative">
-      {/* Toast Notification */}
+    <div className="animate-fade-in">
       {actionMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '50%',
-          transform: 'translateX(50%)',
-          backgroundColor: 'var(--success)',
-          color: 'white',
-          padding: '1rem 2rem',
-          borderRadius: 'var(--radius-full)',
-          boxShadow: 'var(--shadow-float)',
-          zIndex: 1000,
-          animation: 'fadeInDown 0.3s ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 500
-        }}>
+        <div className="toast" style={{ backgroundColor: 'var(--success)' }}>
           <CheckCircle2 size={18} /> {actionMessage}
         </div>
       )}
@@ -108,74 +100,55 @@ export default function Leads() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Leads & Scheduling</h1>
-          <p className="page-subtitle">Manage new inquiries and schedule site visits.</p>
+          <p className="page-subtitle">Manage new inquiries, schedule site visits, and create jobs/contracts when ready.</p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsAddLeadOpen(true)}>
           <UserPlus size={18} /> Add Lead
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 3fr)', gap: '1.5rem' }}>
-        {/* Kanban Board */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>Lead Pipeline</h3>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', overflowX: 'auto' }}>
-            {kanbanColumns.map((col) => {
-              const columnLeads = leads.filter(l => l.status === col.title);
-              
+      <div className="responsive-grid">
+        <div className="span-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(190px, 1fr))', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+            {kanbanColumns.map((column) => {
+              const columnLeads = leads.filter((lead) => lead.status === column.title);
               return (
-                <div 
-                  key={col.title} 
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '0.75rem', minHeight: '65vh' }}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, col.title)}
+                <div
+                  key={column.title}
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', padding: '0.75rem', minHeight: '62vh' }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => handleDrop(event, column.title)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.25rem 0.5rem' }}>
-                    <h4 style={{ fontWeight: 600, fontSize: '0.875rem' }}>{col.title}</h4>
-                    <span style={{ backgroundColor: 'var(--border)', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
-                      {columnLeads.length}
-                    </span>
+                    <h4 style={{ fontWeight: 700, fontSize: '0.875rem' }}>{column.title}</h4>
+                    <span className={`badge badge-${column.color}`}>{columnLeads.length}</span>
                   </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: '100px' }}>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {columnLeads.map((lead) => (
-                      <div 
-                        key={lead.id} 
-                        className="card hover-lift" 
+                      <div
+                        key={lead.id}
+                        className="card hover-lift"
                         draggable
-                        onDragStart={(e) => handleDragStart(e, lead.id)}
+                        onDragStart={(event) => handleDragStart(event, lead.id)}
                         onDragEnd={handleDragEnd}
-                        style={{ padding: '1rem', cursor: 'grab', borderLeft: `3px solid var(--${col.color})` }}
+                        style={{ padding: '1rem', cursor: 'grab', borderLeft: `3px solid var(--${column.color})` }}
                         onClick={() => setSelectedLead(lead)}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <h5 style={{ fontWeight: 600, margin: 0, fontSize: '0.875rem' }}>{lead.name}</h5>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <h5 style={{ fontWeight: 700, margin: 0, fontSize: '0.875rem' }}>{lead.name}</h5>
                           <span style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>{lead.time}</span>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                          Source: <span style={{ fontWeight: 500 }}>{lead.source}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }} onClick={e => e.stopPropagation()}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Source: <strong>{lead.source}</strong></p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', marginBottom: '0.75rem' }}>{lead.projectType}</p>
+                        <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }} onClick={(event) => event.stopPropagation()}>
                           <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Call"><Phone size={14} /></button>
-                          <button 
-                            style={{ color: selectedSmsLead?.id === lead.id ? 'var(--primary)' : 'var(--text-muted)', padding: '0.25rem', transition: 'var(--transition)' }} 
-                            title="Text"
-                            onClick={(e) => { e.stopPropagation(); openSmsForLead(lead); }}
-                          >
-                            <MessageSquare size={14} />
-                          </button>
+                          <button style={{ color: selectedSmsLead?.id === lead.id ? 'var(--primary)' : 'var(--text-muted)', padding: '0.25rem' }} title="Text" onClick={() => openSmsForLead(lead)}><MessageSquare size={14} /></button>
                           <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Schedule"><CalendarIcon size={14} /></button>
                         </div>
                       </div>
                     ))}
-                    {columnLeads.length === 0 && (
-                      <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                        Drag leads here
-                      </div>
-                    )}
+                    {columnLeads.length === 0 && <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Drag leads here</div>}
                   </div>
                 </div>
               );
@@ -183,137 +156,86 @@ export default function Leads() {
           </div>
         </div>
 
-        {/* Dynamic Interactive SMS Panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '75vh' }}>
+        <div className="span-4">
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: '62vh' }}>
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>Live SMS Hub</h3>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                Chatting with: <strong style={{ color: 'var(--text-main)' }}>{selectedSmsLead?.name || 'No lead selected'}</strong>
-              </p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Chatting with: <strong>{selectedSmsLead?.name || 'No lead selected'}</strong></p>
             </div>
-            
             <div style={{ flex: 1, backgroundColor: 'var(--bg-subtle)', padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {chatHistory.map((msg, idx) => (
-                <div key={idx} style={{ 
-                  alignSelf: msg.sender === 'us' ? 'flex-end' : 'flex-start',
-                  backgroundColor: msg.sender === 'us' ? 'var(--primary)' : 'var(--bg-surface)', 
-                  color: msg.sender === 'us' ? 'white' : 'var(--text-main)', 
-                  border: msg.sender === 'them' ? '1px solid var(--border)' : 'none',
-                  padding: '0.75rem', 
-                  borderRadius: msg.sender === 'us' ? '12px 12px 2px 12px' : '12px 12px 12px 2px', 
-                  fontSize: '0.875rem', 
-                  lineHeight: 1.5,
-                  maxWidth: '85%'
+              {chatHistory.map((message, index) => (
+                <div key={`${message.time}-${index}`} style={{
+                  alignSelf: message.sender === 'us' ? 'flex-end' : 'flex-start',
+                  backgroundColor: message.sender === 'us' ? 'var(--primary)' : 'var(--bg-surface)',
+                  color: message.sender === 'us' ? 'white' : 'var(--text-main)',
+                  border: message.sender === 'them' ? '1px solid var(--border)' : 'none',
+                  padding: '0.75rem',
+                  borderRadius: message.sender === 'us' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                  fontSize: '0.875rem',
+                  maxWidth: '90%',
                 }}>
-                  {msg.text}
-                  <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', opacity: 0.7, textAlign: msg.sender === 'us' ? 'right' : 'left' }}>
-                    {msg.time}
-                  </div>
+                  {message.text}
+                  <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', opacity: 0.75 }}>{message.time}</div>
                 </div>
               ))}
             </div>
-
-            <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.5rem', backgroundColor: 'var(--bg-surface)' }}>
-              <input 
-                type="text" 
-                value={smsText}
-                onChange={(e) => setSmsText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendSms()}
-                placeholder="Type SMS message..." 
-                style={{ flex: 1, padding: '0.75rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-full)', outline: 'none', fontSize: '0.875rem', backgroundColor: 'var(--bg-page)' }}
-              />
-              <button 
-                onClick={sendSms}
-                style={{ backgroundColor: 'var(--primary)', color: 'white', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none', transition: 'var(--transition)' }}
-              >
-                <Send size={16} style={{ marginLeft: '-2px' }} />
-              </button>
+            <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
+              <input className="form-input" value={smsText} onChange={(event) => setSmsText(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && sendSms()} placeholder="Type SMS message..." />
+              <button className="btn btn-primary" style={{ padding: '0.75rem' }} onClick={sendSms}><Send size={16} /></button>
             </div>
           </div>
         </div>
       </div>
 
-      <Modal 
-        isOpen={isAddLeadOpen} 
-        onClose={() => setIsAddLeadOpen(false)} 
-        title="Add New Lead"
-        footer={<><button className="btn btn-secondary" onClick={() => setIsAddLeadOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={() => setIsAddLeadOpen(false)}>Save Lead</button></>}
-      >
-        <div className="form-group">
-          <label className="form-label">Full Name</label>
-          <input type="text" className="form-input" placeholder="e.g. Michael Scott" />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Phone Number</label>
-            <input type="tel" className="form-input" placeholder="(555) 000-0000" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Source</label>
-            <select className="form-input">
-              <option>Manual Entry</option>
-              <option>Angie's List</option>
-              <option>HomeAdvisor</option>
-              <option>Website Contact</option>
-              <option>TV Ad / Call-in</option>
-            </select>
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Initial Notes</label>
-          <textarea className="form-input" rows="3" placeholder="What are they looking for?"></textarea>
-        </div>
-      </Modal>
-
-      <Modal 
-        isOpen={!!selectedLead} 
-        onClose={() => setSelectedLead(null)} 
-        title={`Lead: ${selectedLead?.name}`}
+      <Modal
+        isOpen={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
+        title={selectedLead ? `${selectedLead.name} - Lead Details` : 'Lead Details'}
         footer={
-          <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
-             <button className="btn btn-secondary" onClick={() => setSelectedLead(null)}>Close</button>
-             <div style={{ display: 'flex', gap: '1rem' }}>
-               <button className="btn btn-primary" style={{ backgroundColor: 'var(--success)' }} onClick={handleConvertToCustomer}>
-                 <UserPlus size={16} /> Convert to Customer
-               </button>
-               <button className="btn btn-primary">Schedule Appointment</button>
-             </div>
-          </div>
+          selectedLead && (
+            <>
+              <button className="btn btn-secondary" onClick={() => setSelectedLead(null)}>Close</button>
+              <button className="btn btn-primary" onClick={() => createJobFromLead(selectedLead)} disabled={selectedLead.status === 'Converted'}>
+                Create Job/Contract
+              </button>
+            </>
+          )
         }
       >
         {selectedLead && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', backgroundColor: 'var(--bg-subtle)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Status</p>
-                <p style={{ fontWeight: 600 }}>{selectedLead.status}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Phone</p>
-                <p style={{ fontWeight: 600 }}>{selectedLead.phone}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Source</p>
-                <p style={{ fontWeight: 600 }}>{selectedLead.source}</p>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Address & Property Location</label>
-              <input type="text" className="form-input" placeholder="Pending site visit..." />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <p style={{ fontSize: '0.875rem', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-surface)' }}>
-                {selectedLead.notes}
-              </p>
-            </div>
+          <div className="detail-list">
+            <div className="detail-item"><span>Source</span><strong>{selectedLead.source}</strong></div>
+            <div className="detail-item"><span>Phone</span><strong>{selectedLead.phone}</strong></div>
+            <div className="detail-item"><span>Project</span><strong>{selectedLead.projectType}</strong></div>
+            <div className="detail-item"><span>Status</span><strong>{selectedLead.status}</strong></div>
+            <div className="detail-item"><span>Address</span><strong>{selectedLead.address || 'Not entered'}, {selectedLead.city || ''}</strong></div>
+            <div className="detail-item"><span>Notes</span><strong>{selectedLead.notes || 'No notes'}</strong></div>
           </div>
         )}
       </Modal>
 
+      <Modal
+        isOpen={isAddLeadOpen}
+        onClose={() => setIsAddLeadOpen(false)}
+        title="Add New Lead"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsAddLeadOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createLead}>Save Lead</button>
+          </>
+        }
+      >
+        <div className="field-grid">
+          <div className="form-group"><label className="form-label">Full Name</label><input className="form-input" value={newLead.name} onChange={(event) => setNewLead({ ...newLead, name: event.target.value })} /></div>
+          <div className="form-group"><label className="form-label">Phone Number</label><input className="form-input" value={newLead.phone} onChange={(event) => setNewLead({ ...newLead, phone: event.target.value })} /></div>
+          <div className="form-group"><label className="form-label">Email</label><input className="form-input" value={newLead.email} onChange={(event) => setNewLead({ ...newLead, email: event.target.value })} /></div>
+          <div className="form-group"><label className="form-label">Lead Source</label><select className="form-input" value={newLead.source} onChange={(event) => setNewLead({ ...newLead, source: event.target.value })}><option>Website</option><option>Angie</option><option>Google Ads</option><option>Facebook</option><option>Call-in</option><option>Referral</option></select></div>
+          <div className="form-group"><label className="form-label">Project Type</label><input className="form-input" value={newLead.projectType} onChange={(event) => setNewLead({ ...newLead, projectType: event.target.value })} /></div>
+          <div className="form-group"><label className="form-label">City</label><input className="form-input" value={newLead.city} onChange={(event) => setNewLead({ ...newLead, city: event.target.value })} /></div>
+        </div>
+        <div className="form-group"><label className="form-label">Address</label><input className="form-input" value={newLead.address} onChange={(event) => setNewLead({ ...newLead, address: event.target.value })} /></div>
+        <div className="form-group"><label className="form-label">Notes</label><textarea className="form-input" rows="3" value={newLead.notes} onChange={(event) => setNewLead({ ...newLead, notes: event.target.value })} /></div>
+      </Modal>
     </div>
   );
 }

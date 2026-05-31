@@ -3,7 +3,7 @@ import { Plus, MapPin, Truck, Calendar, Clock, AlertTriangle, CheckSquare, Uploa
 import Modal from '../components/Modal';
 
 export default function FieldOps() {
-  const [activeDate, setActiveDate] = useState('Today, Oct 24');
+  const [activeDate] = useState('Today, Oct 24');
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [actionMessage, setActionMessage] = useState('');
 

@@ -1,142 +1,286 @@
-import React, { useState } from 'react';
-import { Upload, Folder, FileText, FileImage, FileCode2, Search, Filter, MoreVertical, Download } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Download, FileCode2, FileImage, FileText, Filter, Folder, MoreVertical, Search, Upload } from 'lucide-react';
+import Modal from '../components/Modal';
+import { useKoolViewData } from '../state/useKoolViewData';
+import { formatDate } from '../utils/koolViewCalculations';
+
+const drawers = [
+  'Active',
+  'Customers',
+  'Rooms',
+  'Decks',
+  'Awnings',
+  'Repairs',
+  'Service',
+  'Windows',
+  'Cancelled Jobs',
+  'Unsigned Contracts',
+];
+
+const fileIcon = (type) => {
+  if (type === 'pdf') return <FileText size={22} color="var(--danger)" />;
+  if (type === 'excel') return <FileCode2 size={22} color="var(--success)" />;
+  if (type === 'image') return <FileImage size={22} color="var(--primary)" />;
+  return <Folder size={22} color="var(--primary)" />;
+};
 
 export default function Documents() {
-  const [activeProperty, setActiveProperty] = useState('All Properties');
+  const { documents, jobs, addDocument } = useKoolViewData();
+  const [activeDrawer, setActiveDrawer] = useState('Active');
+  const [documentMode, setDocumentMode] = useState('current');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+  const [uploadForm, setUploadForm] = useState({
+    jobId: jobs[0]?.id || '',
+    type: 'pdf',
+    name: '',
+    category: 'Rooms',
+    notes: '',
+  });
 
-  const properties = ['All Properties', '492 Artist Way', '101 Farm Rd', '87 Paper St', '88 Pretzel St'];
+  const showToast = (message) => {
+    setActionMessage(message);
+    setTimeout(() => setActionMessage(''), 3000);
+  };
 
-  const documents = [
-    { id: 1, name: 'Building_Permit_Approved.pdf', type: 'pdf', size: '2.4 MB', property: '492 Artist Way', date: 'Oct 24, 2023', author: 'Dorothy' },
-    { id: 2, name: 'Initial_Measurements.xlsx', type: 'excel', size: '156 KB', property: '101 Farm Rd', date: 'Oct 15, 2023', author: 'Michael Tech' },
-    { id: 3, name: 'Site_Photos_Before.zip', type: 'zip', size: '14.2 MB', property: '87 Paper St', date: 'Sep 30, 2023', author: 'Jim H.' },
-    { id: 4, name: 'Signed_Contract_Hudson.pdf', type: 'pdf', size: '1.1 MB', property: '88 Pretzel St', date: 'Oct 02, 2023', author: 'Dorothy' },
-    { id: 5, name: 'Factory_Order_Specs.pdf', type: 'pdf', size: '4.8 MB', property: '101 Farm Rd', date: 'Oct 20, 2023', author: 'Dwight S.' },
-  ];
+  const filteredDocuments = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    return documents.filter((document) => {
+      const modeMatches = documentMode === 'current' ? document.status === 'Current' : document.status === 'Past';
+      const drawerMatches = activeDrawer === 'Active'
+        ? document.folderPath?.startsWith('Active') || document.status === 'Current'
+        : document.category === activeDrawer || document.folderPath?.toLowerCase().includes(activeDrawer.toLowerCase());
+      const searchMatches = !normalized || [
+        document.name,
+        document.customerName,
+        document.lookupAddress,
+        document.folderPath,
+        document.category,
+        document.jobId,
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalized));
+      return modeMatches && drawerMatches && searchMatches;
+    });
+  }, [activeDrawer, documentMode, documents, searchTerm]);
 
-  const getFileIcon = (type) => {
-    switch(type) {
-      case 'pdf': return <FileText className="text-danger" size={24} color="var(--danger)" />;
-      case 'excel': return <FileCode2 className="text-success" size={24} color="var(--success)" />;
-      case 'zip': return <Folder className="text-primary" size={24} color="var(--primary)" />;
-      default: return <FileText size={24} color="var(--text-muted)" />;
+  const groups = useMemo(() => {
+    return filteredDocuments.reduce((result, document) => {
+      const key = documentMode === 'current'
+        ? `${document.customerName || 'Unknown Customer'} / ${document.jobId || 'No Job'}`
+        : `${document.lookupAddress || 'Unknown Address'} / ${document.category || 'Uncategorized'}`;
+      result[key] = (result[key] || 0) + 1;
+      return result;
+    }, {});
+  }, [documentMode, filteredDocuments]);
+
+  const submitUpload = () => {
+    const job = jobs.find((item) => item.id === uploadForm.jobId);
+    if (!uploadForm.name || !job) {
+      showToast('Choose a job and enter a file name.');
+      return;
     }
+
+    addDocument({
+      jobId: job.id,
+      customerId: job.customerId,
+      customerName: job.customerName,
+      name: uploadForm.name,
+      type: uploadForm.type,
+      category: uploadForm.category,
+      lookupAddress: job.address,
+      folderPath: `${job.documentFolder}/${uploadForm.name}`,
+      notes: uploadForm.notes,
+    });
+    setIsUploadOpen(false);
+    setUploadForm({ jobId: jobs[0]?.id || '', type: 'pdf', name: '', category: 'Rooms', notes: '' });
+    showToast('POC document row added. Real file storage is a later backend step.');
   };
 
   return (
     <div className="animate-fade-in">
+      {actionMessage && <div className="toast">{actionMessage}</div>}
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Document Hub</h1>
-          <p className="page-subtitle">FileCenter Replacement: Documents organized by property address.</p>
+          <p className="page-subtitle">FileCenter-style current jobs by customer, past jobs by address and category.</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => setIsUploadOpen(true)}>
           <Upload size={18} /> Upload Document
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.5fr) minmax(0, 9.5fr)', gap: '1.5rem', height: '65vh' }}>
-        {/* Properties Sidebar (Folders) */}
-        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ position: 'relative', marginBottom: '1rem' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input type="text" placeholder="Filter address..." style={{ width: '100%', padding: '0.5rem 1rem 0.5rem 2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', fontSize: '0.875rem', outline: 'none' }} />
+      <div className="responsive-grid">
+        <div className="span-3">
+          <div className="card" style={{ padding: '1rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>FileCenter Drawers</p>
+            </div>
+            <div style={{ display: 'grid', gap: '0.25rem' }}>
+              {drawers.map((drawer) => (
+                <button
+                  key={drawer}
+                  onClick={() => setActiveDrawer(drawer)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.7rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: activeDrawer === drawer ? 'var(--primary-light)' : 'transparent',
+                    color: activeDrawer === drawer ? 'var(--primary-hover)' : 'var(--text-main)',
+                    fontWeight: activeDrawer === drawer ? 700 : 500,
+                    textAlign: 'left',
+                  }}
+                >
+                  <Folder size={16} fill={activeDrawer === drawer ? 'currentColor' : 'transparent'} /> {drawer}
+                </button>
+              ))}
+            </div>
           </div>
-          
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', letterSpacing: '0.05em' }}>Addresses</p>
-            {properties.map(prop => (
-              <button 
-                key={prop}
-                onClick={() => setActiveProperty(prop)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.75rem', 
-                  padding: '0.5rem 0.75rem', 
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: activeProperty === prop ? 'var(--primary-light)' : 'transparent',
-                  color: activeProperty === prop ? 'var(--primary-hover)' : 'var(--text-main)',
-                  fontWeight: activeProperty === prop ? 600 : 500,
-                  fontSize: '0.875rem',
-                  textAlign: 'left',
-                  transition: 'var(--transition)'
-                }}
-              >
-                <Folder size={16} fill={activeProperty === prop ? 'currentColor' : 'transparent'} /> 
-                {prop}
-              </button>
-            ))}
+
+          <div className="card" style={{ padding: '1rem', marginTop: '1rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              {documentMode === 'current' ? 'Current Job Groups' : 'Past Address Groups'}
+            </p>
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {Object.entries(groups).map(([group, count]) => (
+                <div key={group} style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <span>{group}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+              {Object.keys(groups).length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No groups in this view.</p>}
+            </div>
           </div>
         </div>
 
-        {/* Documents List */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{activeProperty}</h3>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="Search files..." style={{ padding: '0.5rem 1rem 0.5rem 2rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', outline: 'none', fontSize: '0.875rem' }} />
+        <div className="span-9">
+          <div className="card">
+            <div className="section-toolbar">
+              <div>
+                <h3>{activeDrawer}</h3>
+                <p>{documentMode === 'current' ? 'New and active jobs organized by customer/job.' : 'Finished jobs searchable by street address and category.'}</p>
               </div>
-              <button className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem' }}>
-                <Filter size={16} /> Filter
-              </button>
+              <div className="section-actions">
+                <button className={`btn ${documentMode === 'current' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setDocumentMode('current')}>Current Jobs</button>
+                <button className={`btn ${documentMode === 'past' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setDocumentMode('past')}>Past Jobs</button>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input className="form-input" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search address, file, job..." style={{ paddingLeft: '2rem', width: '230px' }} />
+                </div>
+                <button className="btn btn-secondary" onClick={() => showToast('Filters are represented by drawers and current/past mode in this POC.')}>
+                  <Filter size={16} /> Filter
+                </button>
+              </div>
             </div>
-          </div>
-          
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Name</th>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Property</th>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Added By</th>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Date</th>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Size</th>
-                  <th style={{ padding: '1rem 1.5rem', fontWeight: 600, width: '80px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.filter(d => activeProperty === 'All Properties' || d.property === activeProperty).map(doc => (
-                  <tr key={doc.id} style={{ borderBottom: '1px solid var(--bg-subtle)', transition: 'var(--transition)' }} className="hover-lift">
-                    <td style={{ padding: '1rem 1.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {getFileIcon(doc.type)}
-                        <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{doc.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{doc.property}</td>
-                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>{doc.author}</td>
-                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{doc.date}</td>
-                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{doc.size}</td>
-                    <td style={{ padding: '1rem 1.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }} title="Download">
-                          <Download size={16} />
-                        </button>
-                        <button style={{ color: 'var(--text-muted)', padding: '0.25rem' }}>
-                          <MoreVertical size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                
-                {documents.filter(d => activeProperty === 'All Properties' || d.property === activeProperty).length === 0 && (
+
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      <Folder size={48} style={{ opacity: 0.3, margin: '0 auto 1rem' }} />
-                      <p>No documents found for this property.</p>
-                      <button className="btn btn-secondary" style={{ marginTop: '1rem' }}>Upload Document</button>
-                    </td>
+                    <th>File</th>
+                    <th>Customer / Address</th>
+                    <th>Job</th>
+                    <th>Category</th>
+                    <th>Folder Path</th>
+                    <th>Added By</th>
+                    <th>Date</th>
+                    <th>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredDocuments.map((document) => (
+                    <tr key={document.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700 }}>
+                          {fileIcon(document.type)}
+                          <span>{document.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <strong>{documentMode === 'current' ? document.customerName : document.lookupAddress}</strong>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{document.lookupAddress}</div>
+                      </td>
+                      <td>{document.jobId}</td>
+                      <td>{document.category}</td>
+                      <td title={document.folderPath} style={{ maxWidth: '260px' }}>
+                        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{document.folderPath}</span>
+                      </td>
+                      <td>{document.addedBy}</td>
+                      <td>{formatDate(document.addedDate)}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button style={{ color: 'var(--text-muted)' }} title="Download"><Download size={16} /></button>
+                          <button style={{ color: 'var(--text-muted)' }} title="More"><MoreVertical size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredDocuments.length === 0 && (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                        <Folder size={42} style={{ opacity: 0.35, marginBottom: '1rem' }} />
+                        <p>No documents found for this FileCenter view.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        title="Add Document Row"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsUploadOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={submitUpload}>Add POC Document</button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>This POC adds a document record only. Real file upload/storage is part of backend implementation.</p>
+        <div className="form-group">
+          <label className="form-label">Job</label>
+          <select className="form-input" value={uploadForm.jobId} onChange={(event) => setUploadForm({ ...uploadForm, jobId: event.target.value })}>
+            {jobs.map((job) => <option key={job.id} value={job.id}>{job.id} - {job.customerName}</option>)}
+          </select>
+        </div>
+        <div className="field-grid">
+          <div className="form-group">
+            <label className="form-label">Document Type</label>
+            <select className="form-input" value={uploadForm.type} onChange={(event) => setUploadForm({ ...uploadForm, type: event.target.value })}>
+              <option value="pdf">PDF</option>
+              <option value="image">Image</option>
+              <option value="excel">Excel</option>
+              <option value="zip">Zip</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Category</label>
+            <select className="form-input" value={uploadForm.category} onChange={(event) => setUploadForm({ ...uploadForm, category: event.target.value })}>
+              <option>Rooms</option>
+              <option>Decks</option>
+              <option>Awnings</option>
+              <option>Windows</option>
+              <option>Service</option>
+              <option>Repairs</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">File Name</label>
+          <input className="form-input" value={uploadForm.name} onChange={(event) => setUploadForm({ ...uploadForm, name: event.target.value })} placeholder="Signed_Contract.pdf" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Notes</label>
+          <textarea className="form-input" rows="3" value={uploadForm.notes} onChange={(event) => setUploadForm({ ...uploadForm, notes: event.target.value })} />
+        </div>
+      </Modal>
     </div>
   );
 }
