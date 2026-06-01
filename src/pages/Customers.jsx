@@ -7,11 +7,20 @@ import { useKoolViewData } from '../state/useKoolViewData';
 import { currency, documentBalance, formatDate, toNumber } from '../utils/koolViewCalculations';
 
 export default function Customers() {
-  const { customers, jobs, invoices } = useKoolViewData();
+  const { customers, jobs, invoices, addCustomer } = useKoolViewData();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionMessage, setActionMessage] = useState('');
+  const [isNewCustomerOpen, setIsNewCustomerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    status: 'Active',
+  });
 
   const showToast = (message) => {
     setActionMessage(message);
@@ -51,6 +60,25 @@ export default function Customers() {
   const activeProjects = jobs.filter((job) => job.status !== 'Completed').length;
   const openBalanceTotal = enrichedCustomers.reduce((total, customer) => total + customer.openBalance, 0);
 
+  const createCustomer = () => {
+    if (!newCustomer.name.trim()) {
+      showToast('Customer name is required.');
+      return;
+    }
+
+    const customer = addCustomer({
+      ...newCustomer,
+      name: newCustomer.name.trim(),
+      phone: newCustomer.phone.trim(),
+      email: newCustomer.email.trim(),
+      address: newCustomer.address.trim(),
+      city: newCustomer.city.trim(),
+    });
+    setIsNewCustomerOpen(false);
+    setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', status: 'Active' });
+    showToast(`${customer.name} added to the shared customer record list.`);
+  };
+
   return (
     <div className="animate-fade-in">
       {actionMessage && <div className="toast">{actionMessage}</div>}
@@ -60,7 +88,7 @@ export default function Customers() {
           <h1 className="page-title">Customers CRM</h1>
           <p className="page-subtitle">Customer records now show active jobs, past jobs, open balances, and lifetime sales.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => showToast('New customer form will create a shared customer record in the production build.')}>
+        <button className="btn btn-primary" onClick={() => setIsNewCustomerOpen(true)}>
           <Plus size={18} /> New Customer
         </button>
       </div>
@@ -169,6 +197,54 @@ export default function Customers() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={isNewCustomerOpen}
+        onClose={() => setIsNewCustomerOpen(false)}
+        title="Add New Customer"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setIsNewCustomerOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createCustomer}>Save Customer</button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          Creates a shared customer record that can later be linked to jobs, invoices, documents, and production work.
+        </p>
+        <div className="field-grid">
+          <div className="form-group">
+            <label className="form-label">Customer Name</label>
+            <input className="form-input" value={newCustomer.name} onChange={(event) => setNewCustomer({ ...newCustomer, name: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone</label>
+            <input className="form-input" value={newCustomer.phone} onChange={(event) => setNewCustomer({ ...newCustomer, phone: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input className="form-input" value={newCustomer.email} onChange={(event) => setNewCustomer({ ...newCustomer, email: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Status</label>
+            <select className="form-input" value={newCustomer.status} onChange={(event) => setNewCustomer({ ...newCustomer, status: event.target.value })}>
+              <option>Active</option>
+              <option>Inactive</option>
+              <option>Past Client</option>
+            </select>
+          </div>
+        </div>
+        <div className="field-grid">
+          <div className="form-group">
+            <label className="form-label">Street Address</label>
+            <input className="form-input" value={newCustomer.address} onChange={(event) => setNewCustomer({ ...newCustomer, address: event.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">City</label>
+            <input className="form-input" value={newCustomer.city} onChange={(event) => setNewCustomer({ ...newCustomer, city: event.target.value })} />
+          </div>
+        </div>
       </Modal>
     </div>
   );

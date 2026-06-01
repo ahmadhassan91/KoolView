@@ -365,6 +365,7 @@ button {
 .span-6 { grid-column: span 6; }
 .span-7 { grid-column: span 7; }
 .span-8 { grid-column: span 8; }
+.span-9 { grid-column: span 9; }
 .span-12 { grid-column: span 12; }
 
 .table-scroll {
@@ -543,6 +544,8 @@ button {
   z-index: 1000;
   animation: fadeInDown 0.3s ease-out;
   font-weight: 700;
+  max-width: min(90vw, 720px);
+  text-align: center;
 }
 
 /* Animations */
@@ -792,7 +795,8 @@ button {
   .span-5,
   .span-6,
   .span-7,
-  .span-8 {
+  .span-8,
+  .span-9 {
     grid-column: span 12;
   }
 
